@@ -6,7 +6,6 @@ function SERVER_CONSOLE_LOGGER(data) {
 
 export async function getProject(req, res) {
   const { projectId } = req.params;
-  // teacher can see only own class; student can see only enrolled
   const projectQ = await pool.query("SELECT * FROM projects WHERE id=$1", [
     projectId,
   ]);
@@ -18,7 +17,6 @@ export async function getProject(req, res) {
 }
 
 export async function getProjectWithMembers(req, res) {
-  // console.log("getProjectWithMembers");
   const { projectId } = req.params;
 
   try {
@@ -31,7 +29,6 @@ export async function getProjectWithMembers(req, res) {
       return res.status(404).json({ success: false, message: "Not found" });
     }
 
-    // Members: OWNER + TEACHER (+ STUDENTS)
     const membersQ = await pool.query(
       `
       WITH c AS (
@@ -81,7 +78,6 @@ export async function getProjectWithMembers(req, res) {
 
 export async function listClassProjects(req, res) {
   const { classId } = req.params;
-  // teacher can see only own class; student can see only enrolled
   if (req.roles?.includes("teacher")) {
     const q = await pool.query(
       "SELECT 1 FROM classes WHERE id=$1 AND teacher_id=$2",
@@ -122,13 +118,7 @@ export async function createProject(req, res) {
     [classId, name, req.user.id],
   );
 
-  // create branches for all enrolled students
-  // await pool.query(
-  //   `INSERT INTO branches (project_id, user_id)
-  //    SELECT $1, sc.student_id FROM stud_classes sc WHERE sc.class_id=$2
-  //    ON CONFLICT DO NOTHING`,
-  //   [pr.rows[0].id, classId]
-  // );
+
 
   return res.status(201).json({ success: true, project: pr.rows[0] });
 }
@@ -163,7 +153,7 @@ export async function deleteProject(req, res) {
   if (!owner.rows[0])
     return res.status(403).json({ success: false, message: "Forbidden" });
 
-  await pool.query("DELETE FROM projects WHERE id=$1", [id]); // cascades branches
+  await pool.query("DELETE FROM projects WHERE id=$1", [id]); 
   return res.json({ success: true });
 }
 
@@ -172,7 +162,6 @@ function httpErr(res, code, message) {
 }
 
 async function getProjectAuth(projectId, userId) {
-  // Owner proiect sau profesorul clasei, sau student înscris în clasa proiectului
   const q = await pool.query(
     `
     SELECT p.id, p.owner_id, p.class_id, c.teacher_id
@@ -199,9 +188,7 @@ async function getProjectAuth(projectId, userId) {
   return canAccess ? pr : { denied: true };
 }
 
-// GET /api/project/:projectId/nodes
 export async function getNodes(req, res) {
-  // console.log("getNodes");
   const { projectId } = req.params;
 
   const projectReq = await getProjectAuth(projectId, req.user.id);
@@ -271,12 +258,9 @@ export async function getNodes(req, res) {
 
     WHERE n.project_id = $1
   `,
-    // [projectId, req.user.id],
     [projectId],
   );
-  // console.log("rows: " + JSON.stringify(rows));
 
-  // output exact pe modelul cerut
   const nodes = rows.map((r) => ({
     id: r.id,
     label: r.label,
@@ -293,98 +277,7 @@ export async function getNodes(req, res) {
   return res.json({ success: true, nodes });
 }
 
-// GET /api/project/:projectId/nodes
-// export async function getProjectNodes(req, res) {
-//   const { projectId } = req.params;
 
-//   const projectReq = await getProjectAuth(projectId, req.user.id);
-
-//   if (!projectReq) return httpErr(res, 404, "Not found");
-//   if (projectReq.denied) return httpErr(res, 403, "Forbidden");
-
-//   // Join nodes -> users ca să primești numele creatorului în același răspuns
-//   // Left join ca să nu pice dacă, din orice motiv, userul lipsește (defensiv)
-//   const { rows } = await pool.query(
-//     `
-//   SELECT
-//     n.id,
-//     n.project_id,
-//     n.label,
-//     n.creator_id,
-//     n.owner_decision,
-
-//     u.name  AS creator_name,
-//     u.email AS creator_email,
-
-//     -- verdictul userului curent pe acest nod (sau NULL)
-//     nr_my.verdict AS my_review_verdict,
-
-//     -- counters (fara CREATED)
-//     COALESCE(rv.positive_count, 0) AS positive_count,
-//     COALESCE(rv.negative_count, 0) AS negative_count,
-//     COALESCE(rv.review_total, 0)   AS review_total,
-
-//     -- approval rate in procente (0..100)
-//     COALESCE(rv.approval_rate_pct, 0) AS approval_rate_pct
-
-//   FROM nodes n
-
-//   LEFT JOIN users u
-//     ON u.id = n.creator_id
-
-//   LEFT JOIN node_reviews nr_my
-//     ON nr_my.node_id = n.id
-//    AND nr_my.reviewer_id = $2
-
-//   LEFT JOIN (
-//     SELECT
-//       node_id,
-//       COUNT(*) FILTER (WHERE verdict = 'POSITIVE') AS positive_count,
-//       COUNT(*) FILTER (WHERE verdict = 'NEGATIVE') AS negative_count,
-//       COUNT(*) FILTER (WHERE verdict IN ('POSITIVE','NEGATIVE')) AS review_total,
-//       ROUND(
-//         100.0 * COUNT(*) FILTER (WHERE verdict = 'POSITIVE')
-//         / NULLIF(COUNT(*) FILTER (WHERE verdict IN ('POSITIVE','NEGATIVE')), 0)
-//       , 2) AS approval_rate_pct
-//     FROM node_reviews
-//     WHERE verdict IN ('POSITIVE','NEGATIVE')  -- excludem CREATED din calcule
-//     GROUP BY node_id
-//   ) rv
-//     ON rv.node_id = n.id
-
-//   WHERE n.project_id = $1
-//     AND n.deleted_at IS NULL
-
-//   ORDER BY n.id ASC
-//   `,
-//     [projectId, req.user.id],
-//   );
-
-//   // Shape ergonomic pentru frontend: creator ca obiect
-//   const nodes = rows.map((r) => ({
-//     id: r.id,
-//     projectId: r.project_id,
-//     label: r.label,
-//     ownerDecision: r.owner_decision,
-//     creator: {
-//       id: r.creator_id,
-//       name: r.creator_name ?? null,
-//       email: r.creator_email ?? null,
-//     },
-//     my_review_verdict: r.my_review_verdict ?? null,
-
-//     reviews: {
-//       positive: Number(r.positive_count ?? 0),
-//       negative: Number(r.negative_count ?? 0),
-//       total: Number(r.review_total ?? 0),
-//       approvalRatePct: Number(r.approval_rate_pct ?? 0),
-//     },
-//   }));
-
-//   return res.json({ success: true, nodes });
-// }
-
-// POST /api/project/:projectId/nodes
 export async function createNode(req, res) {
   const { projectId } = req.params;
   const { label } = req.body || {};
@@ -426,7 +319,6 @@ export async function createNode(req, res) {
   }
 }
 
-// POST /api/project/:projectId/nodes
 export async function createProjectNode(req, res) {
   const { projectId } = req.params;
   const { label } = req.body || {};
@@ -454,7 +346,6 @@ export async function createProjectNode(req, res) {
 
     const node = nodeIns.rows[0];
 
-    // Auto-review CREATED (audit)
     await c.query(
       `INSERT INTO node_reviews (node_id, reviewer_id, verdict)
        VALUES ($1, $2, $3)
@@ -472,7 +363,6 @@ export async function createProjectNode(req, res) {
   }
 }
 
-// DELETE /api/project/:projectId/nodes/:nodeId
 export async function deleteProjectNode(req, res) {
   const { projectId, nodeId } = req.params;
 
@@ -488,7 +378,6 @@ export async function deleteProjectNode(req, res) {
   try {
     await c.query("BEGIN");
 
-    // 1) lock node row (prevents concurrent delete / concurrent checks)
     const nodeFound = await c.query(
       `SELECT id
          FROM v1nodes
@@ -502,9 +391,7 @@ export async function deleteProjectNode(req, res) {
       return httpErr(res, 404, "Node not found");
     }
 
-    // 2) Gather facts from reviews, under lock-ish (same tx; node locked)
-    //    - must be created by current user (CREATE exists)
-    //    - must not be already abandoned by current user (DELETE exists)
+    
     const myCreate = await c.query(
       `SELECT 1
          FROM v1nodereviews
@@ -536,11 +423,7 @@ export async function deleteProjectNode(req, res) {
     }
 
     if (!isOwner) {
-      // GUEST RULES:
-
-      // (a) Owner must NOT have any review on this node (no interaction from owner yet)
-      //     If you want to allow owner's CREATE to count, change this query accordingly,
-      //     but for guest nodes it should be "no rows at all".
+     
       const ownerAnyReview = await c.query(
         `SELECT 1
            FROM v1nodereviews
@@ -558,9 +441,7 @@ export async function deleteProjectNode(req, res) {
         );
       }
 
-      // (b) Decide hard vs soft:
-      //     - if there are reviews from other guests => SOFT (insert DELETE review)
-      //     - else => HARD (delete v1nodes row; cascades v1nodereviews)
+  
       const otherGuestReviews = await c.query(
         `SELECT 1
            FROM v1nodereviews
@@ -572,7 +453,6 @@ export async function deleteProjectNode(req, res) {
       );
 
       if (otherGuestReviews.rows[0]) {
-        // SOFT DELETE: insert DELETE verdict for current user
         await c.query(
           `INSERT INTO v1nodereviews (node_id, reviewer_id, verdict)
            VALUES ($1, $2, 'DELETE')`,
@@ -587,7 +467,6 @@ export async function deleteProjectNode(req, res) {
         });
       }
 
-      // HARD DELETE: no other guest reviews exist
       const del = await c.query(
         `DELETE FROM v1nodes
           WHERE id = $1 AND project_id = $2
@@ -608,9 +487,7 @@ export async function deleteProjectNode(req, res) {
       });
     }
 
-    // OWNER RULES:
-    // - Owner can delete only nodes created by him (already ensured by myCreate above)
-    // - Always HARD delete (no propagation logic here)
+
     const del = await c.query(
       `DELETE FROM v1nodes
         WHERE id = $1 AND project_id = $2
@@ -644,10 +521,9 @@ export async function deleteProjectNode(req, res) {
   }
 }
 
-// PATCH /api/project/:projectId/nodes/:nodeId/review
 export async function upsertNodeReview(req, res) {
   const { projectId, nodeId } = req.params;
-  const { verdict } = req.body || {}; // 'ENDORSE' | 'OPPOSE' | null
+  const { verdict } = req.body || {}; 
   const actorId = req.user.id;
 
   const pr = await getProjectAuth(projectId, actorId);
@@ -662,7 +538,7 @@ export async function upsertNodeReview(req, res) {
   try {
     await c.query("BEGIN");
 
-    // 0) node exists in project?
+    
     const { rows: nrows } = await c.query(
       `SELECT id FROM v1nodes WHERE id = $1 AND project_id = $2`,
       [nodeId, projectId],
@@ -672,8 +548,7 @@ export async function upsertNodeReview(req, res) {
       return httpErr(res, 404, "Node not found");
     }
 
-    // helpers ------------------------------------------------------------
-
+   
     const getNodeCreatorId = async () => {
       const { rows } = await c.query(
         `
@@ -717,7 +592,7 @@ export async function upsertNodeReview(req, res) {
         `,
         [nodeId, actorId],
       );
-      return rows[0] ?? null; // {id, verdict}
+      return rows[0] ?? null; 
     };
 
     const actorHasNodeCreate = async () => {
@@ -752,8 +627,7 @@ export async function upsertNodeReview(req, res) {
       return Boolean(rows[0]?.ok);
     };
 
-    // “support” rule used in edge cleanups:
-    // supported(user) := user ENDORSE on node OR (user CREATE on node AND NOT user DELETE on node)
+
     const getSupportedUserIdsForNode = async () => {
       const { rows } = await c.query(
         `
@@ -783,7 +657,6 @@ export async function upsertNodeReview(req, res) {
       return rows.map((r) => r.reviewer_id);
     };
 
-    // adjacent edges + edge creator + owner/actor flags in one go
     const loadAdjacentEdgesInfo = async () => {
       const { rows } = await c.query(
         `
@@ -866,7 +739,6 @@ export async function upsertNodeReview(req, res) {
 
     const deleteEdgesByIds = async (edgeIds) => {
       if (!edgeIds?.length) return 0;
-      // relies on FK edge_id ON DELETE CASCADE in v1edgereviews; otherwise delete v1edgereviews first
       const { rowCount } = await c.query(
         `DELETE FROM v1edges WHERE id = ANY($1::uuid[])`,
         [edgeIds],
@@ -888,7 +760,6 @@ export async function upsertNodeReview(req, res) {
       return rowCount;
     };
 
-    // delete guest ENDORSE reviews on edges for guests that are NOT supported on node
     const deleteUnsupportedGuestEdgeEndorses = async (
       edgeIds,
       supportedUserIds,
@@ -908,7 +779,6 @@ export async function upsertNodeReview(req, res) {
       return rowCount;
     };
 
-    // delete edges where creator is guest and creator is NOT supported on node
     const deleteEdgesWithUnsupportedGuestCreator = async (
       edgeIds,
       supportedUserIds,
@@ -942,7 +812,6 @@ export async function upsertNodeReview(req, res) {
       return await deleteEdgesByIds(toDelete);
     };
 
-    // delete edges that are left only with CREATE/DELETE from a guest (no ENDORSE/OPPOSE/POSTPONE by anyone)
     const deleteEdgesWithNoDecisionsLeft = async (edgeIds) => {
       if (!edgeIds?.length) return 0;
       const { rows } = await c.query(
@@ -968,17 +837,14 @@ export async function upsertNodeReview(req, res) {
       return await deleteEdgesByIds(toDelete);
     };
 
-    // guest-only: if edge created by actor and not deleted:
-    // - if has other reviews => add DELETE
-    // - else => delete edge
+
     const guestHandleOwnActiveCreatedEdgesOnUndoEndorse = async (adjInfo) => {
       const ownActive = adjInfo
         .filter((e) => e.is_actor_created && !e.has_actor_delete)
         .map((e) => e.edge_id);
       if (!ownActive.length) return { addedDeletes: 0, deletedEdges: 0 };
 
-      // edges that have any other reviews besides actor CREATE?
-      // (we treat "other reviews" as any review not (actor CREATE))
+
       const { rows } = await c.query(
         `
         WITH candidates AS (
@@ -1024,7 +890,6 @@ export async function upsertNodeReview(req, res) {
       return { addedDeletes, deletedEdges };
     };
 
-    // common: delete owner-created adjacent edges (and their reviews)
     const ownerDeleteOwnerCreatedAdjacentEdges = async (adjInfo) => {
       const ownerCreated = adjInfo
         .filter((e) => e.is_owner_created)
@@ -1033,36 +898,29 @@ export async function upsertNodeReview(req, res) {
       return { deleted, ownerCreated };
     };
 
-    // ---------------------------------------------------------------------
-    // Load core state
-    // ---------------------------------------------------------------------
+   
     const nodeCreatorId = await getNodeCreatorId();
     if (!nodeCreatorId) {
       await c.query("ROLLBACK");
       return httpErr(res, 409, "NodeMissingCreator");
     }
 
-    const actorDecision = await getActorNodeDecision(); // owner/guest decision-like (ENDORSE/OPPOSE/POSTPONE)
+    const actorDecision = await getActorNodeDecision(); 
     const actorDecisionVerdict = actorDecision?.verdict ?? null;
 
-    // ---------------------------------------------------------------------
-    // ROLE PRECHECKS
-    // ---------------------------------------------------------------------
+  
     if (isOwner) {
-      // node must not have CREATE by actor
       if (await actorHasNodeCreate()) {
         await c.query("ROLLBACK");
         return httpErr(res, 409, "OwnerCannotReviewOwnCreatedNode");
       }
     } else {
-      // guest: node must not have owner decision
       const hasOwner = await hasOwnerNodeDecision();
       if (hasOwner) {
         await c.query("ROLLBACK");
         return httpErr(res, 409, "OwnerDecisionAlreadySet");
       }
 
-      // and (no CREATE by actor) OR (has CREATE and has DELETE)
       const hasCreate = await actorHasNodeCreate();
       const hasDelete = await actorHasNodeDelete();
       if (hasCreate && !hasDelete) {
@@ -1071,48 +929,36 @@ export async function upsertNodeReview(req, res) {
       }
     }
 
-    // ---------------------------------------------------------------------
-    // OWNER LOGIC
-    // ---------------------------------------------------------------------
     if (isOwner) {
       const adjInfo = await loadAdjacentEdgesInfo();
 
       const doOwnerUndoEndorseEdgeCascade = async () => {
-        // 2.2 delete adjacent edges created by owner
         const { deleted: deletedOwnerEdges, ownerCreated } =
           await ownerDeleteOwnerCreatedAdjacentEdges(adjInfo);
 
-        // 2.3 remaining adjacent edges
         const remainingEdgeIds = adjInfo
           .map((e) => e.edge_id)
           .filter((id) => !ownerCreated.includes(id));
 
-        // 2.3.1 delete owner ENDORSE on remaining edges
         await deleteOwnerEndorseOnEdges(remainingEdgeIds);
 
-        // supported guests for node (after undo endorse, owner no longer counts)
         const supportedIds = await getSupportedUserIdsForNode();
 
-        // 2.3.2 delete edges created by unsupported guest
         await deleteEdgesWithUnsupportedGuestCreator(
           remainingEdgeIds,
           supportedIds,
         );
 
-        // refresh remaining edges after possible deletes (cheap: re-read adjacency)
         const adjInfo2 = await loadAdjacentEdgesInfo();
         const remaining2 = adjInfo2.map((e) => e.edge_id);
 
-        // 2.3.3 delete guest ENDORSE on edges by unsupported guests
         await deleteUnsupportedGuestEdgeEndorses(remaining2, supportedIds);
 
-        // 2.3.4 delete edges left with only CREATE/DELETE (no decision-like)
         await deleteEdgesWithNoDecisionsLeft(remaining2);
 
         return { deletedOwnerEdges };
       };
 
-      // c) verdict null => delegate to a.2 or b.3 based on current decision
       if (isUndo) {
         if (!actorDecision) {
           await c.query("ROLLBACK");
@@ -1120,7 +966,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "ENDORSE") {
-          // c.1 => apply a.2 steps
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
@@ -1136,7 +981,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "OPPOSE") {
-          // c.2 => apply b.3 (delete oppose)
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
@@ -1160,9 +1004,7 @@ export async function upsertNodeReview(req, res) {
         });
       }
 
-      // a) ENDORSE
       if (verdict === "ENDORSE") {
-        // 1 insert if none
         if (!actorDecision) {
           const { rows } = await c.query(
             `
@@ -1182,14 +1024,11 @@ export async function upsertNodeReview(req, res) {
           });
         }
 
-        // 2 undo-endorse
         if (actorDecisionVerdict === "ENDORSE") {
-          // 2.1 delete review
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
 
-          // 2.2 + 2.3 cascade on edges
           await doOwnerUndoEndorseEdgeCascade();
 
           await c.query("COMMIT");
@@ -1201,7 +1040,6 @@ export async function upsertNodeReview(req, res) {
           });
         }
 
-        // 3 if OPPOSE => change to ENDORSE
         if (actorDecisionVerdict === "OPPOSE") {
           const { rows } = await c.query(
             `
@@ -1232,45 +1070,33 @@ export async function upsertNodeReview(req, res) {
         });
       }
 
-      // b) OPPOSE
       if (verdict === "OPPOSE") {
         const supportedIds = await getSupportedUserIdsForNode();
         const adjInfoNow = await loadAdjacentEdgesInfo();
 
         const ownerOpposeEdgeCascade = async () => {
-          // 1.1 / 2.1 delete edges created by owner
           const { ownerCreated } =
             await ownerDeleteOwnerCreatedAdjacentEdges(adjInfoNow);
 
-          // remaining edges
           const remainingEdgeIds = adjInfoNow
             .map((e) => e.edge_id)
             .filter((id) => !ownerCreated.includes(id));
 
-          // 2.2.1 delete edges created by unsupported guest (as per rule)
           await deleteEdgesWithUnsupportedGuestCreator(
             remainingEdgeIds,
             supportedIds,
           );
 
-          // refresh
           const adjInfo2 = await loadAdjacentEdgesInfo();
           const remaining2 = adjInfo2.map((e) => e.edge_id);
 
-          // 2.2.2 delete guest ENDORSE reviews by unsupported guests
           await deleteUnsupportedGuestEdgeEndorses(remaining2, supportedIds);
 
-          // 2.2.3 delete edges left only with CREATE/DELETE
           await deleteEdgesWithNoDecisionsLeft(remaining2);
 
-          // after deletions, apply owner edge oppose:
           const adjInfo3 = await loadAdjacentEdgesInfo();
           const edgeIds3 = adjInfo3.map((e) => e.edge_id);
 
-          // 1.2 / 2.2.4 / 2.2.5:
-          // for each remaining edge not owner-created:
-          //   if no owner review => add OPPOSE
-          //   if owner ENDORSE => change to OPPOSE
           await c.query(
             `
             WITH candidates AS (
@@ -1298,7 +1124,6 @@ export async function upsertNodeReview(req, res) {
             [edgeIds3, ownerId],
           );
 
-          // insert OPPOSE where no owner decision exists
           await c.query(
             `
             INSERT INTO v1edgereviews (edge_id, reviewer_id, verdict)
@@ -1318,7 +1143,6 @@ export async function upsertNodeReview(req, res) {
         };
 
         if (!actorDecision) {
-          // 1) none -> check adjacency then add node OPPOSE and edge cascades
           await ownerOpposeEdgeCascade();
 
           const { rows } = await c.query(
@@ -1340,7 +1164,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "ENDORSE") {
-          // 2) undo-endorse + oppose (change node verdict, cascade edges)
           await ownerOpposeEdgeCascade();
 
           const { rows } = await c.query(
@@ -1363,7 +1186,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "OPPOSE") {
-          // 3) undo-oppose
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
@@ -1391,18 +1213,12 @@ export async function upsertNodeReview(req, res) {
       return httpErr(res, 400, "InvalidOwnerVerdict");
     }
 
-    // ---------------------------------------------------------------------
-    // GUEST LOGIC
-    // ---------------------------------------------------------------------
     {
       const adjInfo = await loadAdjacentEdgesInfo();
 
-      // guest helper for undo-endorse on node: handle adjacent edges per spec
       const guestUndoEndorseEdgeCascade = async () => {
-        // 2.1.1 handle edges CREATE by actor and not DELETE
         const r1 = await guestHandleOwnActiveCreatedEdgesOnUndoEndorse(adjInfo);
 
-        // 2.1.2 edges with CREATE+DELETE+ENDORSE by actor => delete ENDORSE
         await c.query(
           `
           DELETE FROM v1edgereviews r
@@ -1418,13 +1234,10 @@ export async function upsertNodeReview(req, res) {
           [projectId, nodeId, actorId],
         );
 
-        // 2.1.3 edges with ENDORSE but no CREATE/DELETE by actor => delete ENDORSE
-        // (covered by delete above; it deletes any actor ENDORSE regardless of create/delete)
 
         return r1;
       };
 
-      // c) verdict null => route based on current decision (must exist)
       if (isUndo) {
         if (!actorDecision) {
           await c.query("ROLLBACK");
@@ -1432,7 +1245,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "ENDORSE") {
-          // a.2 (edge cascade) then delete node endorse
           await guestUndoEndorseEdgeCascade();
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
@@ -1448,7 +1260,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "OPPOSE") {
-          // b.2 delete node oppose
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
@@ -1472,10 +1283,8 @@ export async function upsertNodeReview(req, res) {
         });
       }
 
-      // a) ENDORSE
       if (verdict === "ENDORSE") {
         if (!actorDecision) {
-          // 1 add ENDORSE
           const { rows } = await c.query(
             `
             INSERT INTO v1nodereviews (node_id, reviewer_id, verdict)
@@ -1495,7 +1304,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "ENDORSE") {
-          // 2 undo-endorse: handle adjacent edges, then delete node endorse
           await guestUndoEndorseEdgeCascade();
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
@@ -1511,7 +1319,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "OPPOSE") {
-          // 3 undo-oppose + endorse
           const { rows } = await c.query(
             `
             UPDATE v1nodereviews
@@ -1541,18 +1348,13 @@ export async function upsertNodeReview(req, res) {
         });
       }
 
-      // b) OPPOSE
       if (verdict === "OPPOSE") {
-        // 1: if no decision OR existing ENDORSE => do edge checks/cascade
         const needEdgeCascade =
           !actorDecision || actorDecisionVerdict === "ENDORSE";
 
         if (needEdgeCascade) {
-          // 1.1 handle edges CREATE by actor and not DELETE:
-          // if they have other reviews => add DELETE, else delete edges
           await guestHandleOwnActiveCreatedEdgesOnUndoEndorse(adjInfo);
 
-          // 1.2 if edges have CREATE+DELETE+ENDORSE by actor => change ENDORSE -> OPPOSE
           await c.query(
             `
             UPDATE v1edgereviews
@@ -1569,7 +1371,6 @@ export async function upsertNodeReview(req, res) {
             [projectId, nodeId, actorId],
           );
 
-          // 1.3 if there are adjacent edges without actor ENDORSE/OPPOSE => add OPPOSE (lightweight)
           await c.query(
             `
             INSERT INTO v1edgereviews (edge_id, reviewer_id, verdict)
@@ -1589,7 +1390,6 @@ export async function upsertNodeReview(req, res) {
           );
         }
 
-        // 1.4 node review: if existing ENDORSE -> change to OPPOSE else add OPPOSE
         if (!actorDecision) {
           const { rows } = await c.query(
             `
@@ -1630,7 +1430,6 @@ export async function upsertNodeReview(req, res) {
         }
 
         if (actorDecisionVerdict === "OPPOSE") {
-          // 2 delete node oppose (toggle off)
           await c.query(`DELETE FROM v1nodereviews WHERE id = $1`, [
             actorDecision.id,
           ]);
@@ -1670,11 +1469,7 @@ export async function upsertNodeReview(req, res) {
   }
 }
 
-// ==========================================================
-// EDGES
-// ==========================================================
 
-// GET /api/project/:projectId/edges
 export async function getProjectEdges(req, res) {
   const { projectId } = req.params;
 
@@ -1761,13 +1556,7 @@ export async function getProjectEdges(req, res) {
     );
 
     const edges = rows.map((r) => {
-      // const likedBy = Array.isArray(r.liked_by) ? r.liked_by : [];
-      // const dislikedBy = Array.isArray(r.disliked_by) ? r.disliked_by : [];
 
-      // const likesCount = likedBy.length;
-      // const dislikesCount = dislikedBy.length;
-      // const total = likesCount + dislikesCount;
-      // const approvalRate = total > 0 ? likesCount / total : 0;
 
       return {
         id: r.id,
@@ -1776,26 +1565,20 @@ export async function getProjectEdges(req, res) {
 
         creator_id: r.creator_id ?? null,
         abandoned: Boolean(r.abandoned),
-        owner_review: r.owner_review ?? null, // APPROVED | REJECTED | POSTPONED | null
+        owner_review: r.owner_review ?? null, 
 
         liked_by: r.liked_by,
         disliked_by: r.disliked_by,
-        // approvalRate,
-        // likesCount,
-        // dislikesCount,
       };
     });
 
     return res.json({ success: true, edges });
   } catch (e) {
-    // ca să vezi exact cauza 500-ului în log
     console.error("getProjectEdges failed:", e);
     return httpErr(res, 500, e?.message || "Server error");
   }
 }
 
-// POST /api/project/:projectId/edges
-// Body: { source_id: uuid, target_id: uuid }
 export async function createProjectEdge(req, res) {
   const { projectId } = req.params;
   const { source_id, target_id } = req.body || {};
@@ -1815,7 +1598,6 @@ export async function createProjectEdge(req, res) {
   try {
     await c.query("BEGIN");
 
-    // 1) nodes must exist in project
     const { rows: nodes } = await c.query(
       `SELECT id FROM v1nodes WHERE project_id = $1 AND id IN ($2, $3)`,
       [projectId, source_id, target_id],
@@ -1825,7 +1607,6 @@ export async function createProjectEdge(req, res) {
       return httpErr(res, 404, "NodeNotFound");
     }
 
-    // helpers ------------------------------------------------------------
 
     const hasNodeCreate = async (nodeId, userId) => {
       const { rows } = await c.query(
@@ -1875,9 +1656,6 @@ export async function createProjectEdge(req, res) {
       return Boolean(rows[0]?.ok);
     };
 
-    // “supported” definitions:
-    // owner supported := owner CREATE OR owner ENDORSE
-    // actor supported (guest) := actor ENDORSE OR (actor CREATE AND NOT actor DELETE)
     const ownerSupportsNode = async (nodeId) => {
       const created = await hasNodeCreate(nodeId, ownerId);
       if (created) return true;
@@ -1892,7 +1670,6 @@ export async function createProjectEdge(req, res) {
       return !deleted;
     };
 
-    // 2) permission checks
     if (isOwner) {
       const sOk = await ownerSupportsNode(source_id);
       const tOk = await ownerSupportsNode(target_id);
@@ -1902,7 +1679,6 @@ export async function createProjectEdge(req, res) {
         return httpErr(res, 403, "OwnerMustSupportBothNodes");
       }
     } else {
-      // guest: each node must be supported by owner OR by actor (as guest rules)
       const sOk = (await ownerSupportsNode(source_id)) || (await actorGuestSupportsNode(source_id));
       const tOk = (await ownerSupportsNode(target_id)) || (await actorGuestSupportsNode(target_id));
 
@@ -1912,7 +1688,6 @@ export async function createProjectEdge(req, res) {
       }
     }
 
-    // 3) create edge
     const { rows: [edge] } = await c.query(
       `
       INSERT INTO v1edges (project_id, source_id, target_id)
@@ -1922,7 +1697,6 @@ export async function createProjectEdge(req, res) {
       [projectId, source_id, target_id],
     );
 
-    // 4) create edge review CREATE (no trigger) — same pattern as nodes
     await c.query(
       `
       INSERT INTO v1edgereviews (edge_id, reviewer_id, verdict)
@@ -1940,7 +1714,6 @@ export async function createProjectEdge(req, res) {
     await c.query("ROLLBACK").catch(() => {});
 
     if (err.code === "23505") {
-      // if you have UNIQUE(project_id, source_id, target_id) on v1edges
       return res.status(409).json({
         success: false,
         code: "EDGE_CONFLICT",
@@ -1958,7 +1731,6 @@ export async function createProjectEdge(req, res) {
     c.release();
   }
 }
-// DELETE /api/project/:projectId/edges/:edgeId
 export async function deleteProjectEdge(req, res) {
   const { projectId, edgeId } = req.params;
   const actorId = req.user.id;
@@ -1974,7 +1746,6 @@ export async function deleteProjectEdge(req, res) {
   try {
     await c.query("BEGIN");
 
-    // 0) edge must exist in project
     const { rows: edgeRows } = await c.query(
       `SELECT id FROM v1edges WHERE id = $1 AND project_id = $2`,
       [edgeId, projectId],
@@ -1984,9 +1755,7 @@ export async function deleteProjectEdge(req, res) {
       return httpErr(res, 404, "Edge not found");
     }
 
-    // OWNER: hard delete edge (reviews via FK cascade ideally)
     if (isOwner) {
-      // if you do NOT have ON DELETE CASCADE on v1edgereviews.edge_id, delete reviews first
       await c.query(`DELETE FROM v1edgereviews WHERE edge_id = $1`, [edgeId]);
       await c.query(`DELETE FROM v1edges WHERE id = $1`, [edgeId]);
 
@@ -1994,9 +1763,7 @@ export async function deleteProjectEdge(req, res) {
       return res.status(200).json({ success: true, deleted: true, mode: "owner_hard_delete" });
     }
 
-    // GUEST RULES ---------------------------------------------------------
 
-    // 1) must have CREATE by actor
     const { rows: hasCreateRows } = await c.query(
       `
       SELECT EXISTS (
@@ -2015,7 +1782,7 @@ export async function deleteProjectEdge(req, res) {
       return httpErr(res, 403, "GuestCannotDeleteEdgeNotCreatedByActor");
     }
 
-    // 2) must NOT have any owner review (decision-like; tighten if you mean any review at all)
+
     const { rows: ownerReviewRows } = await c.query(
       `
       SELECT EXISTS (
@@ -2034,7 +1801,7 @@ export async function deleteProjectEdge(req, res) {
       return httpErr(res, 409, "OwnerEdgeDecisionAlreadySet");
     }
 
-    // 3) if already has CREATE and DELETE by actor => error
+
     const { rows: hasDeleteRows } = await c.query(
       `
       SELECT EXISTS (
@@ -2053,9 +1820,6 @@ export async function deleteProjectEdge(req, res) {
       return httpErr(res, 409, "EdgeAlreadyDeletedByActor");
     }
 
-    // 4) has CREATE and no DELETE:
-    // 4.1 if edge has other reviews => add DELETE review by actor
-    // 4.2 else hard delete edge + reviews
     const { rows: otherReviewsRows } = await c.query(
       `
       SELECT EXISTS (
@@ -2088,7 +1852,6 @@ export async function deleteProjectEdge(req, res) {
       });
     }
 
-    // 4.2: only CREATE exists (no other reviews) => hard delete edge + reviews
     await c.query(`DELETE FROM v1edgereviews WHERE edge_id = $1`, [edgeId]);
     await c.query(`DELETE FROM v1edges WHERE id = $1`, [edgeId]);
 
@@ -2108,8 +1871,6 @@ export async function deleteProjectEdge(req, res) {
   }
 }
 
-// PATCH /api/project/:projectId/edges/:edgeId/owner-decision
-// Body: { decision: 'ACCEPTED' | 'REJECTED' }
 export async function setEdgeOwnerDecision(req, res) {
   const { projectId, edgeId } = req.params;
   const { decision } = req.body || {};
@@ -2173,11 +1934,10 @@ export async function setEdgeOwnerDecision(req, res) {
   }
 }
 
-// PUT /api/project/:projectId/edges/:edgeId/review
-// Body: { verdict: 'POSITIVE' | 'NEGATIVE' | null }
+
 export async function upsertEdgeReview(req, res) {
   const { projectId, edgeId } = req.params;
-  const { verdict } = req.body || {}; // 'ENDORSE' | 'OPPOSE' | null
+  const { verdict } = req.body || {};
   const actorId = req.user.id;
 
   const pr = await getProjectAuth(projectId, actorId);
@@ -2192,7 +1952,6 @@ export async function upsertEdgeReview(req, res) {
   try {
     await c.query("BEGIN");
 
-    // 0) edge must exist and belong to project + fetch source/target
     const { rows: edgeRows } = await c.query(
       `SELECT id, source_id, target_id
        FROM v1edges
@@ -2208,7 +1967,6 @@ export async function upsertEdgeReview(req, res) {
     const sourceId = edge.source_id;
     const targetId = edge.target_id;
 
-    // 1) source/target nodes must exist
     const { rows: nodesOk } = await c.query(
       `SELECT id FROM v1nodes WHERE project_id = $1 AND id IN ($2, $3)`,
       [projectId, sourceId, targetId],
@@ -2218,7 +1976,6 @@ export async function upsertEdgeReview(req, res) {
       return httpErr(res, 404, "EdgeNodeMissing");
     }
 
-    // helpers ------------------------------------------------------
 
     const getNodeCreator = async (nodeId) => {
       const { rows } = await c.query(
@@ -2358,7 +2115,7 @@ export async function upsertEdgeReview(req, res) {
         `,
         [edgeId, actorId],
       );
-      return rows[0] ?? null; // {id, verdict} or null
+      return rows[0] ?? null; 
     };
 
     const insertEdgeDecision = async (v) => {
@@ -2401,19 +2158,15 @@ export async function upsertEdgeReview(req, res) {
     const nodeCreatorSource = await getNodeCreator(sourceId);
     const nodeCreatorTarget = await getNodeCreator(targetId);
 
-    // ----------------------------------------------------------------
-    // ROLE-SPECIFIC PRECHECKS
-    // ----------------------------------------------------------------
+
     if (isOwner) {
-      // owner: edge must not have CREATE by actor
+
       if (await actorHasEdgeCreate()) {
         await c.query("ROLLBACK");
         return httpErr(res, 409, "OwnerCannotReviewOwnCreatedEdge");
       }
     } else {
-      // guest:
-      // - edge must not have owner review
-      // - and (no CREATE by actor) OR (has CREATE and has DELETE)  (i.e., abandoned by actor)
+
       const hasOwnerEdgeReview = await ownerHasAnyEdgeDecision();
       if (hasOwnerEdgeReview) {
         await c.query("ROLLBACK");
@@ -2428,16 +2181,10 @@ export async function upsertEdgeReview(req, res) {
       }
     }
 
-    // ----------------------------------------------------------------
-    // ACTIONS
-    // ----------------------------------------------------------------
-    const actorDecision = await getActorEdgeDecision(); // may be null
+    const actorDecision = await getActorEdgeDecision();
 
-    // ---------- OWNER ----------
     if (isOwner) {
-      // a) ENDORSE
       if (verdict === "ENDORSE") {
-        // nodes must be endorsed by owner OR created by owner
         const sourceOk =
           nodeCreatorSource === ownerId ||
           (await hasNodeEndorse(sourceId, ownerId));
@@ -2471,9 +2218,7 @@ export async function upsertEdgeReview(req, res) {
         });
       }
 
-      // b) OPPOSE
       if (verdict === "OPPOSE") {
-        // must NOT exist at least one of nodes with OPPOSE by owner
         const sourceOpp = await hasNodeOppose(sourceId, ownerId);
         const targetOpp = await hasNodeOppose(targetId, ownerId);
         if (sourceOpp || targetOpp) {
@@ -2487,13 +2232,10 @@ export async function upsertEdgeReview(req, res) {
         } else if (actorDecision.verdict === "ENDORSE") {
           result = await updateEdgeDecision(actorDecision.id, "OPPOSE");
         } else if (actorDecision.verdict === "OPPOSE") {
-          // 3.1 if exists at least one node opposed by owner -> error
-          // (redundant with above, but keep per spec)
           if (sourceOpp || targetOpp) {
             await c.query("ROLLBACK");
             return httpErr(res, 409, "OwnerCannotUndoOpposeDueToOpposedNode");
           }
-          // 3.2 else delete
           await deleteEdgeDecisionById(actorDecision.id);
           result = null;
         } else {
@@ -2509,7 +2251,6 @@ export async function upsertEdgeReview(req, res) {
         });
       }
 
-      // c) UNDO (null)
       if (isUndo) {
         if (!actorDecision) {
           await c.query("ROLLBACK");
@@ -2519,7 +2260,6 @@ export async function upsertEdgeReview(req, res) {
         if (actorDecision.verdict === "ENDORSE") {
           await deleteEdgeDecisionById(actorDecision.id);
         } else if (actorDecision.verdict === "OPPOSE") {
-          // delete only if NOT exists at least one node opposed by owner
           const sourceOpp = await hasNodeOppose(sourceId, ownerId);
           const targetOpp = await hasNodeOppose(targetId, ownerId);
           if (sourceOpp || targetOpp) {
@@ -2544,13 +2284,10 @@ export async function upsertEdgeReview(req, res) {
       return httpErr(res, 400, "InvalidVerdict");
     }
 
-    // ---------- GUEST ----------
     {
-      // a) ENDORSE
+
       if (verdict === "ENDORSE") {
-        // nodes must be:
-        // - endorsed by actor OR created by actor (and not abandoned)
-        // - OR created by owner OR endorsed by owner
+
         const actorSourceCreator = nodeCreatorSource === actorId;
         const actorTargetCreator = nodeCreatorTarget === actorId;
 
@@ -2599,9 +2336,7 @@ export async function upsertEdgeReview(req, res) {
         });
       }
 
-      // b) OPPOSE
       if (verdict === "OPPOSE") {
-        // must not exist at least one node opposed by owner OR actor
         const sourceOppOwner = await hasNodeOppose(sourceId, ownerId);
         const targetOppOwner = await hasNodeOppose(targetId, ownerId);
         const sourceOppActor = await hasNodeOppose(sourceId, actorId);
@@ -2638,7 +2373,6 @@ export async function upsertEdgeReview(req, res) {
         });
       }
 
-      // c) UNDO (null)
       if (isUndo) {
         if (!actorDecision) {
           await c.query("ROLLBACK");
