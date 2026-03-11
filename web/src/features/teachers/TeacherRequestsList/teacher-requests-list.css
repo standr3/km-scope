@@ -1,0 +1,16 @@
+.teacher-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 2);
+  /* height: calc(var(--spacing) * 1); */
+}
+
+.teacher-requests-list__empty {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--muted-foreground);
+
+  padding: calc(var(--spacing) * 2);
+  border-radius: var(--radius);
+  border: 1px dashed var(--border);
+}

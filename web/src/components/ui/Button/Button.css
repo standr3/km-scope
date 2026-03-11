@@ -1,0 +1,134 @@
+/* =========================================================
+   Base Button
+   Generic, reusable button primitive
+   ========================================================= */
+
+.button {
+  /* Reset / normalization */
+  appearance: none;
+
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(var(--spacing) * 2);
+
+  /* Sizing / spacing */
+  height: calc(var(--spacing) * 8);
+  width: fit-content;
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+
+  /* Typography */
+  font: var(--font-sm);
+  text-transform: capitalize;
+  color: var(--text);
+
+  /* Visual styling */
+  background-color: transparent;
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  box-shadow: var(--shadow-button);
+
+  /* Interaction */
+  cursor: pointer;
+  user-select: none;
+  transition:
+    transform 100ms ease,
+    background-color 150ms ease;
+}
+
+/* =========================================================
+   Interaction states
+   ========================================================= */
+
+.button:hover {
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+
+.button:active {
+  transform: translateY(1px);
+}
+
+.button:focus-visible {
+  outline: 2px solid black;
+  outline-offset: 2px;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   Variants
+   ========================================================= */
+
+/* Default */
+.button--default {
+  background-color: transparent;
+  color: var(--text);
+}
+
+.button--icon {
+  padding: 0;
+  aspect-ratio: 1;
+  box-shadow: none;
+  /* background-color: red; */
+}
+.button--icon > svg,
+.button--icon > img {
+  
+  width: 1em;
+  height: 1em;
+}
+/* Primary */
+.button--primary {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+
+/* Ghost */
+.button--ghost {
+  background: transparent;
+  border-color: transparent;
+}
+
+
+.button--filter-chip {
+  background: transparent;
+}
+
+/* =========================================================
+   Sizes
+   ========================================================= */
+
+.button--xs {
+  font: var(--font-xs);
+  height: calc(var(--spacing) * 6);
+  
+}
+
+.button--sm {
+  font: var(--font-sm);
+  height: calc(var(--spacing) * 7);
+  /* background-color: red; */
+  
+}
+
+.button--base {
+  font: var(--font-base);
+  height: calc(var(--spacing) * 8);
+}
+
+.button--lg {
+  font: var(--font-lg);
+  height: calc(var(--spacing) * 9);
+
+}
+
+.button--xl {
+  font: var(--font-xl);
+  height: calc(var(--spacing) * 11);
+  
+}

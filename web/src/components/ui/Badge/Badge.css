@@ -1,0 +1,79 @@
+/* =========================================================
+   Base Badge
+   Small status / indicator label (non-interactive)
+   ========================================================= */
+
+.badge {
+  /* Layout */
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 1);
+
+  /* Sizing / spacing */
+  padding: calc(var(--spacing) * 0.5)
+           calc(var(--spacing) * 1.5);
+
+  /* Typography */
+  font: var(--font-xs);
+  font-weight: var(--font-weight-medium);
+  line-height: 1;
+  white-space: nowrap;
+  color: var(--muted-foreground);
+
+  /* Visual styling */
+  border-radius: 9999px;
+  border: 1px solid var(--border);
+  background-color: transparent;
+}
+
+
+/* =========================================================
+   Icon normalization
+   Ensures icons scale consistently with text
+   ========================================================= */
+
+.badge > svg,
+.badge > img {
+  width: 1em;
+  height: 1em;
+}
+
+
+/* =========================================================
+   Variants
+   ========================================================= */
+
+/* Default (neutral) */
+.badge--default {
+  background-color: transparent;
+  color: var(--muted-foreground);
+  border-color: var(--border);
+}
+
+/* Success */
+.badge--success {
+  background-color: color-mix(in oklab, var(--success) 20%, transparent);
+  color: var(--success);
+  border-color: color-mix(in oklab, var(--success) 35%, transparent);
+}
+
+/* Warning */
+.badge--warning {
+  background-color: color-mix(in oklab, var(--warning) 20%, transparent);
+  color: var(--warning);
+  border-color: color-mix(in oklab, var(--warning) 35%, transparent);
+}
+
+/* Danger */
+.badge--danger {
+  background-color: color-mix(in oklab, var(--danger) 20%, transparent);
+  color: var(--danger);
+  border-color: color-mix(in oklab, var(--danger) 35%, transparent);
+}
+
+/* Outline */
+.badge--outline {
+  background-color: transparent;
+  color: var(--text);
+  border-color: var(--input);
+}

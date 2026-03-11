@@ -1,0 +1,73 @@
+/* src/components/ui/FilterChipRadio/filter-chip-radio.css */
+
+/* =========================================================
+   FilterChipRadio (single option)
+   ========================================================= */
+
+.filter-chip-radio {
+  position: relative;
+  display: inline-flex;
+}
+
+.filter-chip-radio__input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.filter-chip-radio__label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: calc(var(--spacing) * 9);
+  padding: 0 calc(var(--spacing) * 3);
+
+  border-radius: calc(var(--radius) - 2px);
+
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: var(--font-weight-medium);
+
+  color: #89A7FF;
+
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background-color 100ms ease,
+    color 100ms ease,
+    box-shadow 150ms ease,
+    border-color 100ms ease;
+}
+
+/* Hover: text becomes black (your requirement) */
+.filter-chip-radio__label:hover {
+  color: #0043FF;
+}
+
+/* Selected (like the screenshot: white pill on muted background) */
+.filter-chip-radio__input:checked + .filter-chip-radio__label {
+  background-color: #F4F5F9;
+  color: #0043FF;
+  border: 1px solid #B6C8FF;
+  box-shadow: var(--shadow-elevation);
+}
+
+/* Non-selected keeps transparent background */
+.filter-chip-radio__input:not(:checked) + .filter-chip-radio__label {
+  background-color: transparent;
+  border: 1px solid transparent;
+}
+
+/* Keyboard focus */
+.filter-chip-radio__input:focus-visible + .filter-chip-radio__label {
+  outline: 2px solid color-mix(in oklab, var(--ring) 50%, transparent);
+  outline-offset: 2px;
+}
+
+/* Disabled */
+.filter-chip-radio__input:disabled + .filter-chip-radio__label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

@@ -1,0 +1,14 @@
+.table-filters {
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 1);
+
+  padding: calc(var(--spacing) * 1);
+
+  /* background-color: color-mix(in oklab, var(--muted) 70%, transparent); */
+  background: #E6EBFF;
+  border: 1px solid var(--muted);
+  border-radius: calc(var(--radius) - 2px);
+  height: calc(var(--spacing) * 9);
+  width: fit-content;
+}

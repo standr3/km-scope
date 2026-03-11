@@ -1,0 +1,73 @@
+/* =========================================================
+   ScrollArea
+   Scrollbar on inner (below header)
+   ========================================================= */
+
+.scroll-area {
+  position: relative;
+  width: 100%;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+
+  overflow: hidden;
+}
+
+.scroll-area__viewport {
+  position: relative;
+  width: 100%;
+  height: 100%;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+  outline: none;
+
+  border-radius: inherit;
+  transition: box-shadow 150ms ease, color 150ms ease;
+}
+
+.scroll-area__viewport:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ring) 50%, transparent);
+  outline-offset: -2px;
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+}
+
+.scroll-area__header {
+  flex: 0 0 auto;
+
+  background: var(--background);
+  padding: calc(var(--spacing) * 4);
+  border-bottom: 1px solid var(--border);
+}
+
+.scroll-area__title {
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: var(--font-weight-medium);
+}
+
+/* This is the ONLY scroll container */
+.scroll-area__inner {
+  flex: 1 1 auto;
+  min-width: 100%;
+
+  overflow: auto;
+  outline: none;
+
+  padding: 0 calc(var(--spacing) * 4);
+}
+
+/* Optional separators */
+.scroll-area__item {
+  display: block;
+}
+
+.scroll-area__separator {
+  height: 1px;
+  width: 100%;
+  background: var(--border);
+  margin: calc(var(--spacing) * 2) 0;
+}

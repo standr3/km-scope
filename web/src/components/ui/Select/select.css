@@ -1,0 +1,52 @@
+.select-wrapper {
+  position: relative;
+  height: fit-content;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.select-btn {
+  width: calc(var(--spacing) * 20);
+  height: calc(var(--spacing) * 8);
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+
+  background: transparent;
+}
+.select-btn span {
+  display: flex;
+  align-items: center;
+}
+
+.select-btn .icon-chevron {
+  width: 16px;
+  aspect-ratio: 1;
+  color: var(--muted-foreground);
+}
+
+.select-options {
+  display: flex;
+  flex-direction: column;
+  position: absolute;
+  width: calc(var(--spacing) * 20);
+  padding: calc(var(--spacing) * 1.5) calc(var(--spacing) * 1);
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+}
+.select-options button {
+  background-color: transparent;
+  height: calc(var(--spacing) * 8);
+}
+.select-options button:hover {
+  background-color: var(--muted);
+  height: calc(var(--spacing) * 8);
+  border-radius: calc(var(--radius) - 2px);
+}

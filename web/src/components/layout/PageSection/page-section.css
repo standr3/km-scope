@@ -1,0 +1,12 @@
+/* Based on your existing .tabpanel */
+.tabpanel {
+  padding-inline: calc(var(--spacing) * 4);
+  overflow: auto;
+
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+
+  position: relative;
+  width: 100%;
+}

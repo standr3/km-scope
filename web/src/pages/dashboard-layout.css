@@ -1,0 +1,9 @@
+.dashboard-container {
+  min-height: 100vh;
+  display: flex;
+  width: 100%;
+}
+
+.dashboard-container > * {
+  min-width: 0;
+}

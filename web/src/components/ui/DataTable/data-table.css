@@ -1,0 +1,65 @@
+/* =========================================================
+   DataTable
+   Based on your existing table styles
+   ========================================================= */
+
+.table-wrapper {
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid #B6C8FF;
+}
+
+.table-container {
+  overflow-x: auto;
+  width: 100%;
+  position: relative;
+}
+
+.table-container table {
+  width: 100%;
+  border-collapse: collapse;
+
+  font-size: var(--text-sm);
+  line-height: var(--tw-leading, var(--text-sm--line-height));
+  caption-side: bottom;
+}
+
+.table-header .table-row {
+  background: #E6EBFF;
+  
+  
+}
+
+.table-row {
+  border-bottom: 1px solid var(--border);
+  background: #F4F5F9;
+}
+
+tbody .table-row:last-child {
+  border-bottom: 0;
+}
+
+.table-head {
+  height: calc(var(--spacing) * 10);
+  padding-inline: calc(var(--spacing) * 2);
+  vertical-align: middle;
+
+  text-align: left;
+  white-space: nowrap;
+
+  font-weight: var(--font-weight-medium);
+  color:#0043FF;
+}
+
+.table-cell {
+  vertical-align: middle;
+  white-space: nowrap;
+
+  padding: calc(var(--spacing) * 2);
+  text-transform: none;
+  color:#607FFD;
+}
+
+tr .table-cell:first-child {
+  text-transform: capitalize;
+}

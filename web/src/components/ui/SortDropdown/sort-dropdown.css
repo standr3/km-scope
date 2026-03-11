@@ -1,0 +1,102 @@
+/* =========================================================
+   SortDropdown
+   ========================================================= */
+
+:root{
+  outline: none;
+}
+
+.sort-dropdown {
+  position: relative;
+  display: inline-flex;
+  outline: none;
+}
+
+/* Trigger button (like shadcn outline button) */
+.sort-dropdown__trigger {
+
+  appearance: none;
+  outline: none;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 1);
+
+  height: calc(var(--spacing) * 9);
+  padding: 0 calc(var(--spacing) * 3);
+
+  border: 1px solid var(--input);
+  border-radius: calc(var(--radius) - 2px);
+  background: var(--background);
+
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  font-weight: var(--font-weight-medium);
+
+  color: var(--text);
+  cursor: pointer;
+
+  
+  transition: background-color 100ms ease, box-shadow 150ms ease;
+}
+
+
+.sort-dropdown__trigger:hover {
+  background-color: color-mix(in oklab, var(--muted) 60%, transparent);
+}
+
+.sort-dropdown__trigger:focus-visible {
+  outline: 2px solid color-mix(in oklab, var(--ring) 50%, transparent);
+  outline-offset: 2px;
+}
+
+/* Dropdown panel */
+.sort-dropdown__content {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+
+  min-width: 100%;
+  padding: calc(var(--spacing) * 1);
+
+  background: var(--popover);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-elevation);
+
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+
+  z-index: 50;
+}
+
+/* Items */
+.sort-dropdown__item {
+  display: flex;
+  align-items: center;
+
+  height: calc(var(--spacing) * 8);
+  padding: 0 calc(var(--spacing) * 2);
+
+  border-radius: calc(var(--radius) - 4px);
+  background: transparent;
+  border: none;
+
+  font-size: var(--text-sm);
+  line-height: var(--text-sm--line-height);
+  color: var(--text);
+
+  cursor: pointer;
+  text-align: left;
+
+  transition: background-color 100ms ease;
+}
+
+.sort-dropdown__item:hover {
+  background-color: color-mix(in oklab, var(--muted) 70%, transparent);
+}
+
+.sort-dropdown__item.is-active {
+  background-color: color-mix(in oklab, var(--muted) 80%, transparent);
+  font-weight: var(--font-weight-medium);
+}

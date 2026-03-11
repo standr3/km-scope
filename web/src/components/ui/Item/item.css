@@ -1,0 +1,97 @@
+/* =========================================================
+   Item
+   List row / “card-like” row with actions
+   ========================================================= */
+
+.item {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+
+  width: 100%;
+  gap: calc(var(--spacing) * 2.5);
+
+  padding: calc(var(--spacing) * 2.5) calc(var(--spacing) * 3);
+
+  border-radius: calc(var(--radius) + 2px);
+  border: 1px solid var(--border);
+
+  background: transparent;
+
+  outline: none;
+  transition:
+    background-color 100ms ease,
+    border-color 100ms ease;
+}
+
+.item[data-size="xs"] {
+  padding: calc(var(--spacing) * 2) calc(var(--spacing) * 2.5);
+}
+
+.item[data-variant="ghost"] {
+  border-color: transparent;
+}
+
+.item:hover {
+  background-color: color-mix(in oklab, var(--muted) 50%, transparent);
+}
+
+.item:focus-visible {
+  border-color: color-mix(in oklab, var(--ring) 55%, transparent);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--ring) 35%, transparent);
+}
+
+.item__content {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(var(--spacing) * 1);
+  min-width: calc(var(--spacing) * 0);
+}
+
+.item[data-size="xs"] .item__content {
+  font: var(--font-xs);
+  font-weight: var(--font-weight-medium);
+  gap: calc(var(--spacing) * 0);
+}
+
+.item__title {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+
+  width: fit-content;
+
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug);
+  font-weight: var(--font-weight-medium);
+
+  text-transform: capitalize;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.item__description {
+  color: var(--muted-foreground);
+
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--font-weight-normal);
+
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.item[data-size="xs"] .item__description {
+  font: var(--font-xs);
+  line-height: 1.5;
+}
+
+.item__actions {
+  display: flex;
+  align-items: center;
+  gap: calc(var(--spacing) * 2);
+}
