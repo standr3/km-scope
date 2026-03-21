@@ -9,8 +9,8 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import { useAuth } from "../context/AuthContext";
-import CustomNode from "../components/CustomNode.jsx";
-import CustomEdge from "../components/CustomEdge.jsx";
+import CustomNode from "./_CustomNode.jsx";
+import CustomEdge from "./_CustomEdge.jsx";
 
 
 

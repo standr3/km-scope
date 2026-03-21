@@ -185,15 +185,33 @@ CREATE INDEX IF NOT EXISTS idx_classrooms_school
     );
     CREATE INDEX IF NOT EXISTS idx_studclasses_class ON stud_classes(class_id);
 
+
+
+
+
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+    --------------------------------------------------------------
+
     -- projects owned by a teacher, optionally tied to a class
     CREATE TABLE IF NOT EXISTS projects (
       id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       class_id uuid NULL REFERENCES classes(id) ON DELETE CASCADE,
       name text NOT NULL,
+      state BYTEA,
       owner_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
       created_at timestamptz NOT NULL DEFAULT now()
     );
     CREATE INDEX IF NOT EXISTS idx_projects_class ON projects(class_id);
+
+
+
+
+
 
     -- branches: participation of users in a project
     CREATE TABLE IF NOT EXISTS branches (

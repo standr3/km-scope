@@ -1,0 +1,178 @@
+/* ── Card shell ─────────────────────────────────────────── */
+.cn-card {
+  position: relative;
+  min-width: 220px;
+  max-width: 280px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  box-shadow: 0 4px 14px rgba(17, 24, 39, 0.07);
+  padding: 12px 12px 10px;
+  transition: box-shadow 120ms ease, border-color 120ms ease;
+}
+
+.cn-card--selected {
+  border-color: #111827;
+  box-shadow: 0 8px 24px rgba(17, 24, 39, 0.13);
+}
+
+/* ── Handles ────────────────────────────────────────────── */
+.cn-handle {
+  width: 8px !important;
+  height: 8px !important;
+  background: #9ca3af !important;
+  border: 1.5px solid #fff !important;
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.cn-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.cn-label {
+  display: flex;
+  align-items: baseline;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.15;
+}
+
+.cn-label__prefix {
+  color: #9ca3af;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  flex-shrink: 0;
+}
+
+.cn-label__main {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+/* ── Delete button ──────────────────────────────────────── */
+.cn-delete-btn {
+  flex-shrink: 0;
+  border: none;
+  background: #f3f4f6;
+  color: #9ca3af;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.cn-delete-btn:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+/* ── Meta row ───────────────────────────────────────────── */
+.cn-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+
+.cn-author {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #f3f4f6;
+  color: #4b5563;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.cn-role {
+  font-size: 11px;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.cn-role--owner {
+  color: #7c3aed;
+}
+
+/* ── Divider ────────────────────────────────────────────── */
+.cn-divider {
+  height: 1px;
+  background: #f3f4f6;
+  margin-bottom: 8px;
+}
+
+/* ── Subtitle ───────────────────────────────────────────── */
+.cn-subtitle {
+  color: #6b7280;
+  font-size: 12px;
+  margin-bottom: 10px;
+}
+
+/* ── Vote row ───────────────────────────────────────────── */
+.cn-vote-row {
+  display: flex;
+  gap: 12px;
+}
+
+.cn-vote-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cn-vote-count {
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
+  text-align: left;
+  color: #9ca3af;
+  transition: color 120ms ease;
+}
+
+/* ── Vote buttons (existing classes — untouched colors) ─── */
+.vote-btn {
+  border: none;
+  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  cursor: pointer;
+  background: #e5e7eb;
+  color: #374151;
+  transition: 120ms ease;
+}
+
+.vote-btn.up.active {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.vote-btn.down.active {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.vote-btn.locked {
+  box-shadow: inset 0 0 0 1px #9ca3af;
+}
+
+.vote-btn.blocked {
+  opacity: 0.55;
+}

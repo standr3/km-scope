@@ -1,45 +1,83 @@
 // pages/ProjectPage.jsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
-import { getProjectApi,getProjectWithMembersApi } from '../api/project';
+import { getProjectWithMembersApi } from '../api/project';
 import ProjectShell from '../components/ProjectShell';
-import OwnerProjectView from '../components/OwnerProjectView.jsx';
-import GuestProjectView from '../components/GuestProjectView.jsx';
+import ProjectView from '../components/ProjectView.jsx';
+import { ReactFlowProvider } from '@xyflow/react';
+import { ProjectUsersProvider } from '../context/ProjectUsersContext';
 
-export default function ProjectPage() {
-  // console.log("projectpage")
-  const { projectId } = useParams();
-  const { user } = useAuth();
+function ProjectPageContent({ project, currentUserId }) {
+  const membersById = useMemo(() => {
+    const map = new Map();
 
-  // const q = useQuery({
-  //   queryKey: ['project', projectId],
-  //   queryFn: () => getProjectApi(projectId),
-  //   retry: 0,
-  // });
+    for (const member of project.members) {
+      map.set(member.id, {
+        id: member.id,
+        name: member.name,
+        role: member.role,
+      });
+    }
 
+    return map;
+  }, [project.members]);
 
-  // console.log("project page")
-  const q = useQuery({
-    queryKey: ['project', projectId],
-    queryFn: () => getProjectWithMembersApi(projectId),
-    retry: 0, // fail-fast
-  });
+  const projectUsersValue = useMemo(() => {
+    return {
+      membersById,
+      getMemberById: (userId) => membersById.get(userId),
+      projectOwnerId: project.owner_id, 
+    };
+  }, [membersById]);
 
-  // console.log("Project query: ", q1?.data?.members);
-
-
-  if (q.isLoading) return <ProjectShell><p style={{ padding:24 }}>Loading…</p></ProjectShell>;
-  if (q.isError)   return <ProjectShell><p style={{ padding:24 }}>Error loading project.</p></ProjectShell>;
-
-  const p = q.data;
-  // console.log(p)
-  const isOwner = user?.id && p.owner_id === user.id;
+  const isOwner = project.owner_id === currentUserId;
 
   return (
     <ProjectShell>
-      {isOwner ? <OwnerProjectView project={p} /> : <GuestProjectView project={p} />}
+      <ReactFlowProvider>
+        <ProjectUsersProvider value={projectUsersValue}>
+          <ProjectView
+            project={project}
+            projectRole={isOwner ? 'OWNER' : 'GUEST'}
+          />
+        </ProjectUsersProvider>
+      </ReactFlowProvider>
     </ProjectShell>
+  );
+}
+
+export default function ProjectPage() {
+  const { projectId } = useParams();
+  const { user } = useAuth();
+
+  const q = useQuery({
+    queryKey: ['project', projectId],
+    queryFn: () => getProjectWithMembersApi(projectId),
+    retry: 0,
+  });
+
+  if (q.isLoading) {
+    return (
+      <ProjectShell>
+        <p style={{ padding: 24 }}>Loading…</p>
+      </ProjectShell>
+    );
+  }
+
+  if (q.isError || !q.data) {
+    return (
+      <ProjectShell>
+        <p style={{ padding: 24 }}>Error loading project.</p>
+      </ProjectShell>
+    );
+  }
+
+  return (
+    <ProjectPageContent
+      project={q.data}
+      currentUserId={user?.id}
+    />
   );
 }

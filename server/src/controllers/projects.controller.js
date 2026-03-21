@@ -4,25 +4,111 @@ function SERVER_CONSOLE_LOGGER(data) {
   console.log(data);
 }
 
+// export async function getProject(req, res) {
+//   const { projectId } = req.params;
+//   const projectQ = await pool.query("SELECT * FROM projects WHERE id=$1", [
+//     projectId,
+//   ]);
+//   const project = projectQ.rows[0];
+//   if (!project)
+//     return res.status(404).json({ success: false, message: "Not found" });
+
+//   return res.json({ success: true, project });
+// }
+
 export async function getProject(req, res) {
   const { projectId } = req.params;
-  const projectQ = await pool.query("SELECT * FROM projects WHERE id=$1", [
-    projectId,
-  ]);
+
+  const projectQ = await pool.query(
+    `
+      SELECT id, class_id, name, owner_id, created_at
+      FROM projects
+      WHERE id = $1
+    `,
+    [projectId]
+  );
+
   const project = projectQ.rows[0];
-  if (!project)
+
+  if (!project) {
     return res.status(404).json({ success: false, message: "Not found" });
+  }
 
   return res.json({ success: true, project });
 }
 
+// export async function getProjectWithMembers(req, res) {
+//   const { projectId } = req.params;
+
+//   try {
+//     const projectQ = await pool.query("SELECT * FROM projects WHERE id=$1", [
+//       projectId,
+//     ]);
+//     const project = projectQ.rows[0];
+
+//     if (!project) {
+//       return res.status(404).json({ success: false, message: "Not found" });
+//     }
+
+//     const membersQ = await pool.query(
+//       `
+//       WITH c AS (
+//         SELECT id, teacher_id
+//         FROM classes
+//         WHERE id = $1
+//       ),
+//       members AS (
+//         -- owner
+//         SELECT $2::uuid AS user_id, 'OWNER'::text AS role
+//         UNION ALL
+//         -- teacher (may be null)
+//         SELECT teacher_id AS user_id, 'TEACHER'::text AS role
+//         FROM c
+//         UNION ALL
+//         -- students
+//         SELECT sc.student_id AS user_id, 'STUDENT'::text AS role
+//         FROM stud_classes sc
+//         WHERE sc.class_id = $1
+//       )
+//       SELECT DISTINCT ON (u.id)
+//         u.id,
+//         u.name,
+//         m.role
+//       FROM members m
+//       JOIN users u ON u.id = m.user_id
+//       WHERE m.user_id IS NOT NULL
+//       ORDER BY u.id, 
+//         CASE m.role 
+//           WHEN 'OWNER' THEN 1
+//           WHEN 'TEACHER' THEN 2
+//           WHEN 'STUDENT' THEN 3
+//           ELSE 99
+//         END
+//       `,
+//       [project.class_id, project.owner_id],
+//     );
+
+//     const members = membersQ.rows;
+
+//     return res.json({ success: true, project: { ...project, members } });
+//   } catch (err) {
+//     SERVER_CONSOLE_LOGGER(err);
+//     return res.status(500).json({ success: false, message: "Server error" });
+//   }
+// }
 export async function getProjectWithMembers(req, res) {
   const { projectId } = req.params;
 
   try {
-    const projectQ = await pool.query("SELECT * FROM projects WHERE id=$1", [
-      projectId,
-    ]);
+    const projectQ = await pool.query(
+      `
+        SELECT id, class_id, name, owner_id, created_at
+        FROM projects
+        WHERE id = $1
+      `,
+      [projectId]
+    );
+
     const project = projectQ.rows[0];
 
     if (!project) {
@@ -37,14 +123,11 @@ export async function getProjectWithMembers(req, res) {
         WHERE id = $1
       ),
       members AS (
-        -- owner
         SELECT $2::uuid AS user_id, 'OWNER'::text AS role
         UNION ALL
-        -- teacher (may be null)
         SELECT teacher_id AS user_id, 'TEACHER'::text AS role
         FROM c
         UNION ALL
-        -- students
         SELECT sc.student_id AS user_id, 'STUDENT'::text AS role
         FROM stud_classes sc
         WHERE sc.class_id = $1
@@ -56,15 +139,15 @@ export async function getProjectWithMembers(req, res) {
       FROM members m
       JOIN users u ON u.id = m.user_id
       WHERE m.user_id IS NOT NULL
-      ORDER BY u.id, 
-        CASE m.role 
+      ORDER BY u.id,
+        CASE m.role
           WHEN 'OWNER' THEN 1
           WHEN 'TEACHER' THEN 2
           WHEN 'STUDENT' THEN 3
           ELSE 99
         END
       `,
-      [project.class_id, project.owner_id],
+      [project.class_id, project.owner_id]
     );
 
     const members = membersQ.rows;
@@ -75,6 +158,7 @@ export async function getProjectWithMembers(req, res) {
     return res.status(500).json({ success: false, message: "Server error" });
   }
 }
+
 
 export async function listClassProjects(req, res) {
   const { classId } = req.params;
@@ -100,6 +184,31 @@ export async function listClassProjects(req, res) {
   return res.json({ success: true, projects: rows });
 }
 
+// export async function createProject(req, res) {
+//   const { classId } = req.params;
+//   const { name } = req.body || {};
+//   if (!name)
+//     return res.status(400).json({ success: false, message: "Missing name" });
+
+//   const c = await pool.query(
+//     "SELECT id FROM classes WHERE id=$1 AND teacher_id=$2",
+//     [classId, req.user.id],
+//   );
+//   if (!c.rows[0])
+//     return res.status(403).json({ success: false, message: "Forbidden" });
+
+//   const pr = await pool.query(
+//     "INSERT INTO projects (class_id, name, owner_id) VALUES ($1,$2,$3) RETURNING *",
+//     [classId, name, req.user.id],
+//   );
+
+
+
+//   return res.status(201).json({ success: true, project: pr.rows[0] });
+// }
+
+// new createProject
+
 export async function createProject(req, res) {
   const { classId } = req.params;
   const { name } = req.body || {};
@@ -114,7 +223,11 @@ export async function createProject(req, res) {
     return res.status(403).json({ success: false, message: "Forbidden" });
 
   const pr = await pool.query(
-    "INSERT INTO projects (class_id, name, owner_id) VALUES ($1,$2,$3) RETURNING *",
+    `
+    INSERT INTO projects (class_id, name, owner_id) 
+    VALUES ($1,$2,$3) 
+    RETURNING *
+    `,
     [classId, name, req.user.id],
   );
 
@@ -122,6 +235,7 @@ export async function createProject(req, res) {
 
   return res.status(201).json({ success: true, project: pr.rows[0] });
 }
+
 
 export async function updateProject(req, res) {
   const { id } = req.params;
@@ -1731,6 +1845,9 @@ export async function createProjectEdge(req, res) {
     c.release();
   }
 }
+
+
+
 export async function deleteProjectEdge(req, res) {
   const { projectId, edgeId } = req.params;
   const actorId = req.user.id;
