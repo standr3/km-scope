@@ -20,8 +20,30 @@ import {
   getNodes,
 } from "../controllers/projects.controller.js";
 
+
+import {
+  getScoringConfig,
+  upsertScoringConfig,
+  getPerformanceSessions,
+  getSessionScores,
+  createPerformanceSession,
+  recalculateSession,
+  setProjectLocked,
+} from "../controllers/scoring.controller.js";
+
 const router = Router();
 router.use(verifyAccess, requireMemberActive);
+
+
+router.get("/:projectId/scoring-config", getScoringConfig);
+router.put("/:projectId/scoring-config", upsertScoringConfig);
+router.get("/:projectId/sessions", getPerformanceSessions);
+router.post("/:projectId/sessions", createPerformanceSession);
+router.get("/:projectId/sessions/:sessionId/scores", getSessionScores);
+router.post("/:projectId/sessions/:sessionId/recalculate", recalculateSession);
+router.patch("/:projectId/lock", setProjectLocked);
+
+
 
 router.get("/:projectId", getProject);
 

@@ -486,6 +486,94 @@ CREATE INDEX IF NOT EXISTS idx_classrooms_school
         WHERE verdict = 'CREATE';
 
 
+
+
+        -- Configurație scoring per proiect (customizabilă de owner)
+CREATE TABLE IF NOT EXISTS project_scoring_config (
+  project_id             uuid PRIMARY KEY REFERENCES projects(id) ON DELETE CASCADE,
+  weight_node_create     numeric(4,2) NOT NULL DEFAULT 1.50,
+  weight_edge_create     numeric(4,2) NOT NULL DEFAULT 1.25,
+  weight_node_agree      numeric(4,2) NOT NULL DEFAULT 1.00,
+  weight_edge_agree      numeric(4,2) NOT NULL DEFAULT 1.00,
+  weight_node_disagree   numeric(4,2) NOT NULL DEFAULT 0.75,
+  weight_edge_disagree   numeric(4,2) NOT NULL DEFAULT 0.75,
+  penalty_undecided      numeric(4,2) NOT NULL DEFAULT 0.50,
+  updated_at             timestamptz  NOT NULL DEFAULT now()
+);
+
+-- O sesiune de scoring (snapshot scoruri la un moment dat)
+CREATE TABLE IF NOT EXISTS performance_sessions (
+  id         uuid        PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid        NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  created_by uuid        NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  label      text        NULL  -- optional: "Sesiunea 1", "Finalul semestrului" etc.
+);
+CREATE INDEX IF NOT EXISTS idx_perf_sessions_project
+  ON performance_sessions(project_id, created_at DESC);
+
+-- Scorurile per user per sesiune
+CREATE TABLE IF NOT EXISTS session_scores (
+  id                     uuid         PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id             uuid         NOT NULL REFERENCES performance_sessions(id) ON DELETE CASCADE,
+  user_id                uuid         NOT NULL REFERENCES users(id),
+
+  -- metrici principale
+  trust_factor           numeric(6,4) NOT NULL DEFAULT 0,   -- 0.0 - 2.0+
+  performance_pct        numeric(6,2) NOT NULL DEFAULT 0,   -- 0 - 100
+
+  -- breakdown noduri
+  nodes_created          int NOT NULL DEFAULT 0,
+  nodes_created_accepted int NOT NULL DEFAULT 0,
+  nodes_created_rejected int NOT NULL DEFAULT 0,
+  nodes_created_pending  int NOT NULL DEFAULT 0,
+
+  -- breakdown edges
+  edges_created          int NOT NULL DEFAULT 0,
+  edges_created_accepted int NOT NULL DEFAULT 0,
+  edges_created_rejected int NOT NULL DEFAULT 0,
+  edges_created_pending  int NOT NULL DEFAULT 0,
+
+  -- acorduri noduri
+  nodes_agreed           int NOT NULL DEFAULT 0,
+  nodes_agreed_correct   int NOT NULL DEFAULT 0,
+  nodes_agreed_wrong     int NOT NULL DEFAULT 0,
+  nodes_agreed_pending   int NOT NULL DEFAULT 0,
+
+  -- acorduri edges
+  edges_agreed           int NOT NULL DEFAULT 0,
+  edges_agreed_correct   int NOT NULL DEFAULT 0,
+  edges_agreed_wrong     int NOT NULL DEFAULT 0,
+  edges_agreed_pending   int NOT NULL DEFAULT 0,
+
+  -- dezacorduri
+  nodes_disagreed        int NOT NULL DEFAULT 0,
+  nodes_disagreed_correct int NOT NULL DEFAULT 0,  -- au dezacordat și owner a respins
+  nodes_disagreed_wrong  int NOT NULL DEFAULT 0,   -- au dezacordat dar owner a acceptat
+  edges_disagreed        int NOT NULL DEFAULT 0,
+  edges_disagreed_correct int NOT NULL DEFAULT 0,
+  edges_disagreed_wrong  int NOT NULL DEFAULT 0,
+
+  -- nedecis (putea să voteze dar nu a votat)
+  nodes_undecided        int NOT NULL DEFAULT 0,
+  edges_undecided        int NOT NULL DEFAULT 0,
+
+  -- tags personalitate
+  personality_tags       jsonb NOT NULL DEFAULT '[]',
+  -- ex: ["risk_taker", "initiator", "follower", "contrarian", "passive"]
+
+  -- breakdown detaliat pentru UI
+  rewards_breakdown      jsonb NOT NULL DEFAULT '[]',
+  penalties_breakdown    jsonb NOT NULL DEFAULT '[]',
+
+  UNIQUE (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_scores_session ON session_scores(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_scores_user    ON session_scores(user_id);
+
+
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_locked boolean NOT NULL DEFAULT false;
+
   `;
 
   const c = await pool.connect();

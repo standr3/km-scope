@@ -16,6 +16,8 @@ import { useProjectUsers } from "../context/ProjectUsersContext";
 import CustomNode from "./CustomNode";
 import CustomEdge from "./CustomEdge";
 import EventsPanel from "./EventsPanel";
+import PerformancePanel from "./PerformancePanel";
+
 
 import {
   createEvent,
@@ -89,11 +91,22 @@ export default function ProjectView({ projectRole, project }) {
   const [edges, setEdges] = useState([]);
   const [events, setEvents] = useState([]);
 
+  // citești flag-ul de lock din Yjs
+  const yMeta = provider ? provider.document.getMap("meta") : null;
+  const [isLocked, setIsLocked] = useState(false);
+
   // ─── UI state ────────────────────────────────────────────────────────────
   const [awareness, setAwareness] = useState([]);
   const [isEventsOpen, setIsEventsOpen] = useState(false);
 
   // ─── Yjs observers → React state ────────────────────────────────────────
+
+
+  useEffect(() => {
+    if (!yMeta || !provider) return;
+    // resetează lock la mount — în caz că a rămas blocat dintr-o sesiune anterioară
+    yMeta.set("isLocked", false);
+  }, [yMeta]);
 
   useEffect(() => {
     if (!yEvents) return;
@@ -143,6 +156,10 @@ export default function ProjectView({ projectRole, project }) {
     },
     [yEvents]
   );
+  const lockProject = useCallback((locked) => {
+    if (!yMeta) return;
+    yMeta.set("isLocked", locked);
+  }, [yMeta]);
 
   // ─── executeResolution ──────────────────────────────────────────────────
   const executeResolution = useCallback(
@@ -173,6 +190,12 @@ export default function ProjectView({ projectRole, project }) {
     (action) => {
       if (!yEvents || !yNodes || !yEdges || !provider || !user) return;
 
+      // guests nu pot acționa când proiectul e blocat
+      if (isLocked && currentMemberRole !== "OWNER") {
+        alert("Proiectul este blocat. Așteptați finalizarea evaluării.");
+        return;
+      }
+
       const resolution = resolveAction(action, {
         ...resolverContext,
         events: yEvents.toArray(),
@@ -188,7 +211,7 @@ export default function ProjectView({ projectRole, project }) {
 
       executeResolution(resolution);
     },
-    [yEvents, yNodes, yEdges, provider, user, executeResolution, currentMemberId, currentMemberRole, projectOwnerId, getMemberById]
+    [isLocked, yEvents, yNodes, yEdges, provider, user, executeResolution, currentMemberId, currentMemberRole, projectOwnerId, getMemberById]
   );
 
   // ─── Handlers ────────────────────────────────────────────────────────────
@@ -353,6 +376,12 @@ export default function ProjectView({ projectRole, project }) {
           Reset all Yjs state
         </button>
       )}
+      <PerformancePanel
+        projectId={project.id}
+        projectRole={projectRole}
+        onLockProject={lockProject}
+        isLocked={isLocked}
+      />
     </>
   );
 }

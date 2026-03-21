@@ -70,3 +70,42 @@ export async function setEdgeOwnerDecisionApi(projectId, edgeId, payload) {
   );
   return data;
 }
+
+
+// --------------------
+// SCORING
+// --------------------
+export async function getScoringConfigApi(projectId) {
+  const { data } = await API.get(`/project/${projectId}/scoring-config`);
+  return data.config;
+}
+
+export async function upsertScoringConfigApi(projectId, payload) {
+  const { data } = await API.put(`/project/${projectId}/scoring-config`, payload);
+  return data.config;
+}
+
+export async function getPerformanceSessionsApi(projectId) {
+  const { data } = await API.get(`/project/${projectId}/sessions`);
+  return data.sessions;
+}
+
+export async function createPerformanceSessionApi(projectId, payload) {
+  const { data } = await API.post(`/project/${projectId}/sessions`, payload);
+  return data;
+}
+
+export async function getSessionScoresApi(projectId, sessionId) {
+  const { data } = await API.get(`/project/${projectId}/sessions/${sessionId}/scores`);
+  return data.scores;
+}
+export async function setProjectLockedApi(projectId, locked) {
+  const { data } = await API.patch(`/project/${projectId}/lock`, { locked });
+  return data;
+}
+export async function recalculateSessionApi(projectId, sessionId) {
+  const { data } = await API.post(
+    `/project/${projectId}/sessions/${sessionId}/recalculate`
+  );
+  return data;
+}
