@@ -16,7 +16,7 @@ import {
   CircleArrowLeft,
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
- 
+
 // import "./dashboard-layout.css";
 
 import {
@@ -115,8 +115,8 @@ export default function DashboardLayout() {
       >
         <div
           className={[
-            "grid h-full grid-cols-12 items-center",
-            isProjectMode ? "mx-4 md:mx-6" : "mx-[17vw]",
+            "grid h-full grid-cols-12 items-center px-4 sm:px-6",
+            isProjectMode ? "" : "xl:mx-[17vw] xl:px-0",
           ].join(" ")}
         >
           {isProjectMode ? (
@@ -223,8 +223,8 @@ export default function DashboardLayout() {
             </>
           ) : (
             <>
-              <div className="col-span-1 flex items-center">
-                <a className="w-3/5 aspect-square rounded-full overflow-hidden select-none border">
+              <div className="col-span-3 flex items-center sm:col-span-2 xl:col-span-1">
+                <a className="h-8 w-8 shrink-0 overflow-hidden rounded-full border sm:h-10 sm:w-10">
                   <svg
                     viewBox="0 0 200 200"
                     className="h-full w-full"
@@ -347,11 +347,11 @@ export default function DashboardLayout() {
                 </a>
               </div>
 
-              <nav className="col-span-4 flex items-center text-[16px] text-[#3e4c59] font-semibold">
+              <nav className="col-span-5 flex min-w-0 items-center text-sm font-semibold text-[#3e4c59] sm:col-span-6 sm:text-[16px] xl:col-span-4">
                 {isAdmin ? (
-                  <div className="flex flex-col">
-                    <span>{schoolName}</span>
-                    <span className="font-normal">Admin workspace</span>
+                  <div className="flex min-w-0 flex-col">
+                    <span className="truncate">{schoolName}</span>
+                    <span className="truncate font-normal">Admin workspace</span>
                   </div>
                 ) : (
                   <>
@@ -366,16 +366,14 @@ export default function DashboardLayout() {
                 )}
               </nav>
 
-              <div className="col-end-13 flex justify-end items-center">
+              <div className="col-span-4 flex items-center justify-end sm:col-span-4 xl:col-end-13">
                 <div className="relative">
                   <button
-                    className="flex flex-row-reverse justify-center items-center rounded-sm border border-[#e2e8f0]
-                text-[#3e4c59] hover:bg-[#fbfcfd] hover:border-[#cad5e2]
-                pl-4 pr-2 py-2 w-fit gap-[14px] font-semibold text-[16px]"
+                    className="flex w-fit max-w-[120px] flex-row-reverse items-center justify-center gap-2 rounded-sm border border-[#e2e8f0] px-2 py-2 text-sm font-semibold text-[#3e4c59] hover:border-[#cad5e2] hover:bg-[#fbfcfd] sm:max-w-[220px] sm:gap-[14px] sm:pl-4 sm:pr-2 sm:text-[16px]"
                     onClick={() => setIsDropdownOpen((current) => !current)}
                   >
                     <EllipsisVertical size={18} className="shrink-0" />
-                    <span>{isAdmin ? "Account" : userLabel}</span>
+                    <span className="truncate">{isAdmin ? "Account" : userLabel}</span>
                   </button>
 
                   {isDropdownOpen && (
@@ -420,10 +418,10 @@ export default function DashboardLayout() {
       {
         !isProjectMode
           ? (
-            <div className="   ">
-              <div className="mx-[17vw] grid grid-cols-12 ">
-                <aside className="sticky top-[16vh] col-span-3 h-[calc(100vh-16vh)] bg-slate-50 px-3 py-6">
-                  <nav className="flex flex-col gap-[2px] text-[14px]">
+            <div className="min-h-0 overflow-y-auto overflow-x-hidden">
+              <div className="flex min-h-0 flex-col px-4 sm:px-6 xl:mx-[17vw] xl:grid xl:grid-cols-12 xl:px-0">
+                <aside className="border-b border-slate-200 bg-slate-50 py-3 xl:sticky xl:top-[72px] xl:col-span-3 xl:h-[calc(100vh-72px)] xl:border-b-0 xl:px-3 xl:py-6">
+                  <nav className="flex gap-2 overflow-x-auto text-[14px] xl:flex-col xl:overflow-visible">
 
                     {isAdmin
                       ? (
@@ -435,7 +433,7 @@ export default function DashboardLayout() {
                               to={item.to}
                               className={({ isActive }) =>
                                 [
-                                  "block rounded-[4px] px-[18px] py-[11px] leading-none transition",
+                                  "block shrink-0 rounded-[4px] px-[18px] py-[11px] leading-none transition",
                                   isActive
                                     ? "bg-[#e7ebf0] text-[#102a43]"
                                     : "text-[#102a43] hover:bg-[#eef2f6]",
@@ -448,29 +446,29 @@ export default function DashboardLayout() {
                       ) : (
 
                         navItems
-                        .filter((item) => item?.admin !== true)
-                        .map((item) => (
-                          <NavLink
-                            key={item.to}
-                            to={item.to}
-                            className={({ isActive }) =>
-                              [
-                                "block rounded-[4px] px-[18px] py-[11px] leading-none transition",
-                                isActive
-                                  ? "bg-[#e7ebf0] text-[#102a43]"
-                                  : "text-[#102a43] hover:bg-[#eef2f6]",
-                              ].join(" ")
-                            }
-                          >
-                            {item.label}
-                          </NavLink>
-                        ))
+                          .filter((item) => item?.admin !== true)
+                          .map((item) => (
+                            <NavLink
+                              key={item.to}
+                              to={item.to}
+                              className={({ isActive }) =>
+                                [
+                                  "block shrink-0 rounded-[4px] px-[18px] py-[11px] leading-none transition",
+                                  isActive
+                                    ? "bg-[#e7ebf0] text-[#102a43]"
+                                    : "text-[#102a43] hover:bg-[#eef2f6]",
+                                ].join(" ")
+                              }
+                            >
+                              {item.label}
+                            </NavLink>
+                          ))
                       )}
                   </nav>
                 </aside>
 
-                <main className="col-span-9 min-h-0 py-0 pl-8">
-                  <section className="h-[calc(100vh-16vh-3rem)] w-full overflow-hidden">
+                <main className="min-h-0 min-w-0 py-4 xl:col-span-9 xl:pl-8">
+                  <section className="min-h-0 w-full overflow-visible xl:h-[calc(100vh-72px-3rem)] xl:overflow-y-auto xl:overflow-x-hidden">
                     <Outlet />
                   </section>
                 </main>
@@ -478,7 +476,7 @@ export default function DashboardLayout() {
             </div>
           )
           : (
-            <main className="min-h-0 min-w-0 overflow-hidden ">
+            <main className="min-h-0 min-w-0 overflow-y-auto overflow-x-hidden">
               <Outlet />
             </main>
           )
@@ -727,7 +725,3 @@ export default function DashboardLayout() {
 //     </SidebarInset>
 //   </div>
 // </SidebarProvider>
-
-
-
-

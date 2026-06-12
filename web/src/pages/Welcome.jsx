@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-
+import { Link } from "react-router-dom";
 const navItems = [
   { label: "Product", opensMenu: true },
   { label: "For Teachers", opensMenu: true },
@@ -200,13 +200,11 @@ export default function WelcomePage({ onLogin }) {
       className="h-screen overflow-y-auto bg-black text-white"
     >
       <header
-        className={`fixed left-0 top-0 z-50 h-[97px] w-full transition-all duration-300 ease-in-out ${
-          headerIsHidden ? "-translate-y-[97px]" : "translate-y-0"
-        } ${
-          menuOpen
+        className={`fixed left-0 top-0 z-50 h-[97px] w-full transition-all duration-300 ease-in-out ${headerIsHidden ? "-translate-y-[97px]" : "translate-y-0"
+          } ${menuOpen
             ? "bg-white text-black"
             : "bg-black text-white hover:bg-white hover:text-black"
-        }`}
+          }`}
         onMouseLeave={() => setMenuOpen(false)}
       >
         <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-6 sm:px-10 lg:px-16">
@@ -237,11 +235,10 @@ export default function WelcomePage({ onLogin }) {
         </div>
 
         <div
-          className={`absolute left-0 top-[97px] w-full bg-white text-black transition-[max-height,opacity] duration-300 ${
-            menuOpen
-              ? "max-h-[calc(100vh-97px)] overflow-y-auto opacity-100 md:max-h-[430px]"
-              : "max-h-0 overflow-hidden opacity-0"
-          }`}
+          className={`absolute left-0 top-[97px] w-full bg-white text-black transition-[max-height,opacity] duration-300 ${menuOpen
+            ? "max-h-[calc(100vh-97px)] overflow-y-auto opacity-100 md:max-h-[430px]"
+            : "max-h-0 overflow-hidden opacity-0"
+            }`}
         >
           <div className="mx-auto grid max-w-[1440px] gap-8 px-6 py-8 sm:px-10 md:grid-cols-2 lg:grid-cols-4 lg:px-16 lg:py-12">
             {dropdownItems.map((item) => (
@@ -297,13 +294,13 @@ export default function WelcomePage({ onLogin }) {
                 </p>
 
                 <div className="pointer-events-auto mt-8 flex flex-col gap-3 sm:flex-row">
-                  <button
-                    type="button"
+                  <Link
+                    to="/login"
                     onClick={onLogin}
-                    className="rounded-md bg-white px-5 py-3 text-sm font-semibold text-black"
+                    className="inline-flex rounded-md bg-white px-5 py-3 text-sm font-semibold text-black"
                   >
                     Login
-                  </button>
+                  </Link>
 
                   <button
                     type="button"
