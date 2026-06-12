@@ -15,8 +15,13 @@ export function useHocuspocusProvider({ projectId, user }) {
 
     const ydoc = new Y.Doc();
 
+    const collabUrl = import.meta.env.VITE_COLLAB_URL;
+
+    if (!collabUrl) {
+      return;
+    }
     const nextProvider = new HocuspocusProvider({
-      url: "ws://127.0.0.1:1234",
+      url: collabUrl,
       name: projectId,
       document: ydoc,
     });

@@ -44,18 +44,25 @@ app.use("/api/teacher", teacherRoutes);
 app.use("/api/student", studentRoutes);
 app.use("/api/project", projectRoutes);
 
-const port = Number(process.env.PORT || 3000);
+const port = Number(process.env.PORT || 10000);
+
 (async () => {
-  if (process.env.DB_INIT_ON_START !== "false") await initDb();
+  if (process.env.DB_INIT_ON_START !== "false") {
+    await initDb();
+  }
 
-  
-  app.listen(port, () => console.log(`[api] http://localhost:${port}`));
+  app.listen(port, "0.0.0.0", () => {
+    console.log(`[api] listening on 0.0.0.0:${port}`);
+  });
 
-  const collabServer = createCollabServer();
-  collabServer.listen();
-  console.log(
-    `[hocuspocus] ws://localhost:${process.env.HOCUSPOCUS_PORT || 1234}`,
-  );
+  if (process.env.ENABLE_COLLAB_SERVER === "true") {
+    const collabServer = createCollabServer();
+    collabServer.listen();
+
+    console.log(
+      `[hocuspocus] ws://localhost:${process.env.HOCUSPOCUS_PORT || 1234}`,
+    );
+  }
 })().catch((e) => {
   console.error(e);
   process.exit(1);

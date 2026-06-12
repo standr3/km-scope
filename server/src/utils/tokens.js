@@ -6,7 +6,7 @@ export function issueAccess(user, roles = []) {
   return jwt.sign(
     { sub: String(user.id), email: user.email, roles },
     process.env.ACCESS_SECRET,
-    { expiresIn: "15m", issuer: "your-api" }
+    { expiresIn: "15m", issuer: "your-api" },
   );
 }
 
@@ -17,12 +17,13 @@ export function setRefreshCookie(res, userId) {
     {
       expiresIn: "30d",
       issuer: "your-api",
-    }
+    },
   );
   res.cookie("refresh_token", token, {
     httpOnly: true,
     secure: isProd,
-    sameSite: isProd ? "none" : "lax", 
+    sameSite: isProd ? "none" : "lax",
+    path: "/",
     maxAge: 30 * 24 * 60 * 60 * 1000,
   });
   res.cookie("rt_demo", "present", {
@@ -48,4 +49,3 @@ export function clearRefreshCookie(res) {
     path: "/",
   });
 }
-
