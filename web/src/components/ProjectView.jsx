@@ -16,6 +16,7 @@ import { useProjectUsers } from "../context/ProjectUsersContext";
 import CustomNode from "./CustomNode";
 import CustomEdge from "./CustomEdge";
 import EventsPanel from "./EventsPanel";
+import { createPortal } from "react-dom";
 
 import {
   createEvent,
@@ -28,6 +29,14 @@ import {
   removeEventById,
 } from "./yjsUtils.js";
 
+// import { calculateSessionScores, createSession, saveSession, loadSessions, DEFAULT_WEIGHTS } from '../utils/scoring';
+import { createPerformanceSessionApi } from '../api/project';
+import { calculateSessionScores, DEFAULT_WEIGHTS } from '../utils/scoring';
+
+import QuickScorePanel from './QuickScorePanel';
+import { MousePointer2 } from "lucide-react";
+import { useProjectShell } from "@/context/ProjectShellContext";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTANTE — referințe stabile
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,7 +48,6 @@ const edgeTypes = { custom: CustomEdge };
 // CURSOR COMPONENT
 // ─────────────────────────────────────────────────────────────────────────────
 
-// TODO: înlocuiește cu getMemberById din context când cursorul va afișa date reale
 const DBG_NAME_MAP = {
   tests1: "Student 1",
   tests2: "Student 2",
@@ -48,13 +56,32 @@ const DBG_NAME_MAP = {
 
 const Cursor = ({ cursorPosition, userName, role }) => {
   const displayedName = DBG_NAME_MAP[userName] ?? userName;
+  const isOwner = role === "OWNER";
+
   return (
     <div
-      className="cursor"
-      style={{ top: cursorPosition.y - 60, left: cursorPosition.x - 260 }}
+      className="cursor fixed   pointer-events-none"
+      style={{
+        left: `${cursorPosition.x}px`,
+        top: `${cursorPosition.y}px`,
+        transform: "translate(0, 0)",
+      }}
     >
-      <div className={`pointer ${role === "OWNER" ? "pointer-owner" : ""}`} />
-      <div className="name-badge">{displayedName}</div>
+      <MousePointer2
+        className="block"
+        size={18}
+        fill={isOwner ? "#1F2933" : "#7b8794"}
+        stroke={isOwner ? "#1F2933" : "#7b8794"}
+      />
+
+      <div
+        className={[
+          "name-badge absolute left-4 top-4 rounded-3xl font-semibold",
+          isOwner ? "text-[#1F2933]" : "text-[#7b8794]",
+        ].join(" ")}
+      >
+        {displayedName}
+      </div>
     </div>
   );
 };
@@ -64,6 +91,20 @@ const Cursor = ({ cursorPosition, userName, role }) => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default function ProjectView({ projectRole, project }) {
+
+  const {
+    eventsRoot,
+    scoringRoot,
+    registerActions,
+  } = useProjectShell();
+
+
+  const [headerRoot, setHeaderRoot] = useState(null);
+
+  useEffect(() => {
+    setHeaderRoot(document.getElementById("dashboard-project-title"));
+  }, []);
+
 
   // ─── Auth & project context ─────────────────────────────────────────────
   const { user } = useAuth();
@@ -193,7 +234,11 @@ export default function ProjectView({ projectRole, project }) {
 
   // ─── Handlers ────────────────────────────────────────────────────────────
 
-  const addNode = () => dispatch({ type: "NODE_ADD", position: { x: 0, y: 0 } });
+  const addNode = () => {
+    const label = prompt("Node label:");
+    if (!label) return;
+    dispatch({ type: "NODE_ADD", position: { x: 0, y: 0 }, label });
+  }
 
   const onNodesChange = useCallback(
     (changes) => {
@@ -261,6 +306,34 @@ export default function ProjectView({ projectRole, project }) {
     });
   }, [projectRole, provider, yNodes, yEdges, yEvents]);
 
+
+  // handler pentru scoring
+  const handleScoreSession = async () => {
+    const label = prompt('Label sesiune (opțional):') ?? undefined;
+
+    const scores = calculateSessionScores(
+      yEvents.toArray(),
+      project.members,
+      projectOwnerId,
+      DEFAULT_WEIGHTS,
+    );
+
+    if (!scores.length) {
+      alert('Nu există studenți de evaluat.');
+      return;
+    }
+
+    try {
+      await createPerformanceSessionApi(project.id, {
+        label: label || undefined,
+        scores,
+      });
+      alert('Sesiunea a fost salvată.');
+    } catch (e) {
+      console.error(e);
+      alert('Eroare la salvarea sesiunii.');
+    }
+  };
   // ─── Memos pentru render ─────────────────────────────────────────────────
 
   const renderedNodes = useMemo(() => {
@@ -288,7 +361,7 @@ export default function ProjectView({ projectRole, project }) {
         ...edge,
         data: {
           ...edge.data,
-          reviewState, projectRole,
+          reviewState, projectRole, currentUserId: currentMemberId,
           onVoteUp: () => dispatch({ type: "EDGE_VOTE", edgeId: edge.id, voteType: "up" }),
           onVoteDown: () => dispatch({ type: "EDGE_VOTE", edgeId: edge.id, voteType: "down" }),
           onDelete: () => dispatch({ type: "EDGE_DELETE", edgeId: edge.id }),
@@ -304,9 +377,41 @@ export default function ProjectView({ projectRole, project }) {
 
   // ─── JSX ────────────────────────────────────────────────────────────────
 
+
+  useEffect(() => {
+    registerActions({
+      addNode,
+      clearProjectState: projectRole === "OWNER" ? clearProjectState : null,
+      scoreSession: projectRole === "OWNER" ? handleScoreSession : null,
+    });
+
+    return () => {
+      registerActions({
+        addNode: null,
+        clearProjectState: null,
+        scoreSession: null,
+      });
+    };
+  }, [
+    registerActions,
+    addNode,
+    clearProjectState,
+    handleScoreSession,
+    projectRole,
+  ]);
+
   return (
-    <>
-      <div className="diagram-container">
+    <div className="relative h-full w-full overflow-hidden  ">
+
+      {headerRoot &&
+        createPortal(
+          <span className="block truncate font-semibold">
+            {project.name}
+          </span>,
+          headerRoot
+        )}
+
+      <div className="h-full w-full  ">
         <ReactFlow
           nodes={renderedNodes}
           edges={renderedEdges}
@@ -317,42 +422,37 @@ export default function ProjectView({ projectRole, project }) {
           onConnect={onConnect}
           onMouseMove={updateAwareness}
           onNodeDrag={updateAwareness}
+          className=" "
         >
-          <Background />
+          <Background bgColor="#fff" />
           <Controls />
           <MiniMap />
         </ReactFlow>
 
-        <button className="add-node-btn" onClick={addNode}>
-          Add node
-        </button>
+       
       </div>
 
-      {isEventsOpen ? (
-        <EventsPanel events={renderedEvents} onClose={() => setIsEventsOpen(false)} />
-      ) : (
-        <button
-          onClick={() => setIsEventsOpen(true)}
-          style={{
-            position: "fixed", top: 88, right: 16, zIndex: 1000,
-            border: "1px solid #e5e7eb", background: "#fff", borderRadius: 999,
-            padding: "10px 14px", boxShadow: "0 8px 24px rgba(17, 24, 39, 0.12)",
-            cursor: "pointer", fontWeight: 600,
-          }}
-        >
-          Open events
-        </button>
-      )}
+       
 
       {awareness.map(({ cursorPosition, userName, role }, index) => (
         <Cursor key={index} cursorPosition={cursorPosition} userName={userName} role={role} />
       ))}
 
-      {projectRole === "OWNER" && (
-        <button style={{ position: "absolute", bottom: 20, left: 60, zIndex: 10 }} onClick={clearProjectState}>
-          Reset all Yjs state
-        </button>
+      
+
+      {eventsRoot && createPortal(
+        <EventsPanel events={renderedEvents} />,
+        eventsRoot
       )}
-    </>
+
+      {scoringRoot && projectRole === "OWNER" && createPortal(
+        <QuickScorePanel
+          events={events}
+          members={project.members}
+          projectOwnerId={projectOwnerId}
+        />,
+        scoringRoot
+      )}
+    </div>
   );
 }

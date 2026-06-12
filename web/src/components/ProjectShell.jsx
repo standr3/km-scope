@@ -1,28 +1,28 @@
 import { useNavigate } from "react-router-dom";
-import { X } from 'lucide-react';
-import Button from "./ui/Button/Button";
+import { CircleArrowLeft } from 'lucide-react';
 
 
-export default function ProjectShell({ children }) {
-  const navigate = useNavigate();
+import { useProjectShell } from "../context/ProjectShellContext";
+import ProjectSidebar from "./ProjectSidebar";
+
+export default function ProjectShell({ children, projectRole }) {
+  const { expanded } = useProjectShell();
 
   return (
-    <div className="m-[-16px] relative h-[calc(100%+32px)] ">
-      <header className=" absolute top-0 left-0 p-2 z-10 ">
-        <Button
-          size="icon-lg"
-          variant="outline" 
-          onClick={() => navigate(-1)}
-          className="font-semibold hover:underline inline-block"
-        >
-          <X />
-        </Button>
-      </header>
+    <div
+      className={[
+        "relative h-full w-full overflow-hidden bg-[#f5f7fa]",
+        "md:grid md:transition-[grid-template-columns] md:duration-200",
+        expanded
+          ? "md:grid-cols-[320px_minmax(0,1fr)]"
+          : "md:grid-cols-[56px_minmax(0,1fr)]",
+      ].join(" ")}
+    >
+      <ProjectSidebar projectRole={projectRole} />
 
-      <div className="absolute top-0 left-0 right-0 h-full  "> 
+      <main className="relative h-full min-h-0 min-w-0 overflow-hidden pb-14 md:pb-0">
         {children}
-      
-      </div>
+      </main>
     </div>
   );
 }

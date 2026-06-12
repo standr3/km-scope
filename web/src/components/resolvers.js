@@ -103,7 +103,7 @@ export function isEntityTrueForActor(entityEvents, { actorId }) {
 
 // Toate edge events adiacente unui nod (bazat pe sourceId/targetId)
 export function getAdjacentEdgeEvents(events, nodeId) {
-  // găsim edgeIds care au nodul ca capăt din create events
+  // găsim edgeIds adiacente din create events — doar ele au sourceId/targetId
   const adjacentEdgeIds = new Set(
     events
       .filter(
@@ -246,10 +246,11 @@ export function getNodeReviewState(
     return "_";
   };
 
-  const creatorName = dbgName(
-    creatorId,
-    getMemberById(creatorId)?.name ?? "creator_name_missing",
-  );
+  // const creatorName = dbgName(
+  //   creatorId,
+  //   getMemberById(creatorId)?.name ?? "creator_name_missing",
+  // );
+  const creatorName = getMemberById(creatorId)?.name ?? "Teacher";
 
   const usersNameUppedArray = nodeEvents
     .filter((e) => e.action === "up")
@@ -435,6 +436,7 @@ export function resolveNodeAdd(
   action,
   { currentMemberId, currentMemberRole, nodes },
 ) {
+  
   const res = createEmptyResolution();
   const scope = currentMemberRole === "OWNER" ? "global" : "local";
   const nodeId = crypto.randomUUID();
@@ -707,7 +709,6 @@ export function resolveNodeVote(
         if (existing) res.events.nodes.remove.push(existing.id);
       }
 
-      // propagare owner down pe nod → edges adiacente cu +(0) devin -(0)
       const adjacentEdgeEvents = getAdjacentEdgeEvents(events, nodeId);
       for (const edgeId of getUniqueEdgeIds(adjacentEdgeEvents)) {
         const edgeEventsForId = adjacentEdgeEvents.filter(
@@ -716,16 +717,25 @@ export function resolveNodeVote(
         const ownerUppedEdge = edgeEventsForId.find(
           (e) => e.action === "up" && e.scope === "global" && e.userId === null,
         );
+        const ownerDownedEdge = edgeEventsForId.find(
+          (e) =>
+            e.action === "down" && e.scope === "global" && e.userId === null,
+        );
+
+        if (ownerDownedEdge) continue; // deja -(0), rămâne
+
         if (ownerUppedEdge) {
+          // retrage +(0), adaugă -(0)
           res.events.edges.remove.push(ownerUppedEdge.id);
-          res.events.edges.add.push({
-            entityType: "edge",
-            entityId: edgeId,
-            action: "down",
-            scope: "global",
-            userId: null,
-          });
         }
+        // adaugă -(0) în ambele cazuri (cu sau fără +(0) anterior)
+        res.events.edges.add.push({
+          entityType: "edge",
+          entityId: edgeId,
+          action: "down",
+          scope: "global",
+          userId: null,
+        });
       }
 
       res.events.nodes.add.push({
@@ -1158,15 +1168,20 @@ export function resolveEdgeVote(
     getMemberById,
   });
 
-  if (reviewState.ownerReviewed || reviewState.ownerCreated) {
-    res.error = "Cannot review — edge is locked by teacher";
-    return res;
-  }
-  if (reviewState.currentCreated && !reviewState.currentAbandoned) {
+  if (reviewState.ownerCreated) {
     res.error = "Cannot review own edge";
     return res;
   }
 
+  if (currentMemberRole !== "OWNER" && reviewState.ownerReviewed) {
+    res.error = "Cannot review — edge is locked by teacher";
+    return res;
+  }
+
+  if (reviewState.currentCreated && !reviewState.currentAbandoned) {
+    res.error = "Cannot review own edge";
+    return res;
+  }
   const edgeCreateEvent = events.find(
     (e) =>
       e.entityType === "edge" && e.entityId === edgeId && e.action === "create",

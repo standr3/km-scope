@@ -70,3 +70,21 @@ export async function setEdgeOwnerDecisionApi(projectId, edgeId, payload) {
   );
   return data;
 }
+
+
+
+
+export async function getPerformanceSessionsApi(projectId) {
+  const { data } = await API.get(`/project/${projectId}/sessions`);
+  return data.sessions;
+}
+
+export async function getSessionScoresApi(projectId, sessionId) {
+  const { data } = await API.get(`/project/${projectId}/sessions/${sessionId}/scores`);
+  return data.scores;
+}
+
+export async function createPerformanceSessionApi(projectId, payload) {
+  const { data } = await API.post(`/project/${projectId}/sessions`, payload);
+  return data.session;
+}

@@ -20,6 +20,13 @@ import {
   getNodes,
 } from "../controllers/projects.controller.js";
 
+import {
+  getPerformanceSessions,
+  getSessionScores,
+  createPerformanceSession,
+} from "../controllers/scoring.controller.js";
+
+
 const router = Router();
 router.use(verifyAccess, requireMemberActive);
 
@@ -62,5 +69,12 @@ router.patch("/:projectId/edges/:edgeId/owner-decision", setEdgeOwnerDecision);
 
 // like / dislike (toggle off = DELETE)
 router.patch("/:projectId/edges/:edgeId/review", upsertEdgeReview);
+
+
+
+
+router.get("/:projectId/sessions", getPerformanceSessions);
+router.get("/:projectId/sessions/:sessionId/scores", getSessionScores);
+router.post("/:projectId/sessions", createPerformanceSession);
 
 export default router;

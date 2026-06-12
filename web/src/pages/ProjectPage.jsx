@@ -1,4 +1,4 @@
-// pages/ProjectPage.jsx
+
 import React, { useMemo } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,6 +8,7 @@ import ProjectShell from '../components/ProjectShell';
 import ProjectView from '../components/ProjectView.jsx';
 import { ReactFlowProvider } from '@xyflow/react';
 import { ProjectUsersProvider } from '../context/ProjectUsersContext';
+import { ProjectShellProvider } from '../context/ProjectShellContext';
 
 function ProjectPageContent({ project, currentUserId }) {
   const membersById = useMemo(() => {
@@ -28,23 +29,25 @@ function ProjectPageContent({ project, currentUserId }) {
     return {
       membersById,
       getMemberById: (userId) => membersById.get(userId),
-      projectOwnerId: project.owner_id, 
+      projectOwnerId: project.owner_id,
     };
   }, [membersById]);
 
   const isOwner = project.owner_id === currentUserId;
-
+  // console.log(project)
   return (
-    <ProjectShell>
-      <ReactFlowProvider>
-        <ProjectUsersProvider value={projectUsersValue}>
-          <ProjectView
-            project={project}
-            projectRole={isOwner ? 'OWNER' : 'GUEST'}
-          />
-        </ProjectUsersProvider>
-      </ReactFlowProvider>
-    </ProjectShell>
+    <ProjectShellProvider>
+      <ProjectShell projectRole={isOwner ? 'OWNER' : 'GUEST'}>
+        <ReactFlowProvider>
+          <ProjectUsersProvider value={projectUsersValue}>
+            <ProjectView
+              project={project}
+              projectRole={isOwner ? 'OWNER' : 'GUEST'}
+            />
+          </ProjectUsersProvider>
+        </ReactFlowProvider>
+      </ProjectShell>
+    </ProjectShellProvider>
   );
 }
 
@@ -59,25 +62,18 @@ export default function ProjectPage() {
   });
 
   if (q.isLoading) {
-    return (
-      <ProjectShell>
-        <p style={{ padding: 24 }}>Loading…</p>
-      </ProjectShell>
-    );
+    return <p className="p-6">Loading…</p>;
   }
 
   if (q.isError || !q.data) {
-    return (
-      <ProjectShell>
-        <p style={{ padding: 24 }}>Error loading project.</p>
-      </ProjectShell>
-    );
+    return <p className="p-6">Error loading project.</p>;
   }
 
   return (
     <ProjectPageContent
       project={q.data}
       currentUserId={user?.id}
+
     />
   );
 }

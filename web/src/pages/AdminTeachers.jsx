@@ -215,8 +215,9 @@ export default function AdminTeachers() {
   // const teachers = [];
   // Otherwise: real data with fallback dummy when empty:
   // const requests_teachers = requests_teachers_dummy;
-  const requests_teachers =
-    (data.requests_teachers?.length ? data.requests_teachers : requests_teachers_dummy) ?? [];
+  // const requests_teachers =
+  //   (data.requests_teachers?.length ? data.requests_teachers : requests_teachers_dummy) ?? [];
+  const requests_teachers = data.requests_teachers;
   const teachers = data.teachers ?? [];
 
   // UI state
@@ -300,98 +301,131 @@ export default function AdminTeachers() {
 
   if (ovQ.isLoading) {
     return (
-      <div className="p-4 text-sm text-muted-foreground">
-        <Loader2 className="mr-2 inline-block h-4 w-4 animate-spin" />
-        Loading…
+      <div className="flex h-[calc(100vh-16vh-3rem)] items-center rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Loading teacher accounts…
       </div>
     );
   }
-  if (ovQ.isError) return <div className="p-4 text-sm text-destructive">Error</div>;
+
+  if (ovQ.isError) {
+    return (
+      <div className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-600">
+        Error loading teacher accounts.
+      </div>
+    );
+  }
+
+  const sortedHint =
+    sort.key === "name"
+      ? sort.dir === "asc"
+        ? "Name · A to Z"
+        : "Name · Z to A"
+      : sort.key === "email"
+        ? sort.dir === "asc"
+          ? "Email · A to Z"
+          : "Email · Z to A"
+        : sort.dir === "asc"
+          ? "Status · Pending first"
+          : "Status · Granted first";
 
   return (
-    <div className="space-y-6">
-      {/* Sticky page header (inside Outlet) */}
-      <div className="sticky top-0 z-20 -mx-4 border-b bg-background/80 px-4 py-4 backdrop-blur">
-        <div className="space-y-1">
-          <h1 className="text-xl font-semibold tracking-tight">Teacher Accounts</h1>
-          <p className="text-sm text-muted-foreground">
-            Search, filter, sort, and manage teacher access.
+    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden xl:h-[calc(100vh-16vh-3rem)] xl:overflow-hidden">
+      {/* Page header */}
+      <section className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:h-1/3 xl:grid-cols-9">
+        <div className="border-b border-slate-200 bg-slate-50 p-5 xl:col-span-3 xl:border-b-0 xl:border-r">
+          <p className="text-xl font-semibold uppercase tracking-[0.16em] text-slate-500 sm:text-2xl">
+            Teachers
+          </p>
+
+          <h1 className="mt-3 text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
+            {totalApplications}
+          </h1>
+
+          <p className="mt-2 text-sm text-slate-500">
+            Total applications
           </p>
         </div>
 
-        {/* Stat cards row */}
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Total applications
-              </CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold">{totalApplications}</div>
-            </CardContent>
-          </Card>
+        <div className="flex flex-col gap-5 p-5 xl:col-span-6 xl:justify-between">
+          <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
+            <div className="min-w-0">
+              <h2 className="text-lg font-semibold text-slate-950">
+                Manage teacher access
+              </h2>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Pending requests
-              </CardTitle>
-              <Clock className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold">{pendingCount}</div>
-            </CardContent>
-          </Card>
+              <p className="mt-1 max-w-xl text-sm text-slate-500">
+                Review pending teacher requests, grant access, or revoke existing
+                memberships from the school workspace.
+              </p>
+            </div>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                Granted
-              </CardTitle>
-              <UserCheck className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold">{grantedCount}</div>
-            </CardContent>
-          </Card>
+            <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:min-w-[300px]">
+              <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase leading-none text-amber-700">
+                  Pending
+                </p>
+
+                <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
+                  {pendingCount}
+                </p>
+              </div>
+
+              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+                <p className="text-[10px] font-semibold uppercase leading-none text-emerald-700">
+                  Granted
+                </p>
+
+                <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
+                  {grantedCount}
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      </section>
 
-      {/* Table card */}
-      <div className="rounded-xl border bg-card text-card-foreground shadow-sm">
-        {/* toolbar */}
-        <div className="flex flex-col gap-3 border-b p-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-1 items-center gap-2">
+      {/* Teachers table area */}
+      <section className="flex min-h-[520px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:min-h-0 xl:flex-1">
+        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
+          <div className="min-w-0">
+            <h3 className="text-sm font-semibold text-slate-950">
+              Teacher accounts
+            </h3>
+
+            <p className="mt-1 text-xs text-slate-500">
+              Search, filter, sort, and manage teacher admission status.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_170px_110px] 2xl:w-auto">
             <Input
               value={q}
               onChange={(e) => setQ(e.target.value)}
-              placeholder="Search name, email…"
-              className="max-w-md"
+              placeholder="Search name, email..."
+              className="h-9 w-full"
             />
 
             <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger className="w-[170px]">
+              <SelectTrigger className="h-9 w-full">
                 <SelectValue placeholder="Filter status" />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="all">All ({totalApplications})</SelectItem>
                 <SelectItem value="pending">Pending ({pendingCount})</SelectItem>
                 <SelectItem value="granted">Granted ({grantedCount})</SelectItem>
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-muted-foreground">
-              Showing {total === 0 ? 0 : start + 1}-{Math.min(start + pageSize, total)} of {total}
-            </div>
-
-            <Select value={String(pageSize)} onValueChange={(v) => setPageSize(Number(v))}>
-              <SelectTrigger className="w-[110px]">
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => setPageSize(Number(v))}
+            >
+              <SelectTrigger className="h-9 w-full sm:col-span-2 lg:col-span-1">
                 <SelectValue />
               </SelectTrigger>
+
               <SelectContent>
                 <SelectItem value="5">5 / page</SelectItem>
                 <SelectItem value="10">10 / page</SelectItem>
@@ -402,135 +436,190 @@ export default function AdminTeachers() {
           </div>
         </div>
 
-        {/* table */}
-        <div className="p-2">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-[28%]">
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3"
-                    onClick={() => toggleSort("name")}
-                  >
-                    Name <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+        <div className="min-h-0 flex-1 overflow-y-auto p-4">
+          <div className="w-full overflow-x-auto rounded-md border border-slate-200">
+            <Table className="min-w-[680px]">
+              <TableHeader className="bg-slate-50">
+                <TableRow className="hover:bg-slate-50">
+                  <TableHead className="w-[28%] text-slate-600">
+                    <Button
+                      variant="ghost"
+                      className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
+                      onClick={() => toggleSort("name")}
+                    >
+                      Name
+                      <ArrowUpDown className="h-4 w-4 opacity-60" />
+                    </Button>
+                  </TableHead>
 
-                <TableHead>
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3"
-                    onClick={() => toggleSort("email")}
-                  >
-                    Email <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+                  <TableHead className="text-slate-600">
+                    <Button
+                      variant="ghost"
+                      className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
+                      onClick={() => toggleSort("email")}
+                    >
+                      Email
+                      <ArrowUpDown className="h-4 w-4 opacity-60" />
+                    </Button>
+                  </TableHead>
 
-                <TableHead className="w-[170px]">
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3"
-                    onClick={() => toggleSort("status")}
-                  >
-                    Admission <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+                  <TableHead className="w-[150px] text-slate-600">
+                    <Button
+                      variant="ghost"
+                      className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
+                      onClick={() => toggleSort("status")}
+                    >
+                      Admission
+                      <ArrowUpDown className="h-4 w-4 opacity-60" />
+                    </Button>
+                  </TableHead>
 
-                <TableHead className="w-[120px] text-right">Action</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {pageRows.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={4} className="py-10 text-center text-sm text-muted-foreground">
-                    No results.
-                  </TableCell>
+                  <TableHead className="w-[120px] text-right text-slate-600">
+                    Action
+                  </TableHead>
                 </TableRow>
-              )}
+              </TableHeader>
 
-              {pageRows.map((row) => {
-                const isPending = row.kind === "pending";
-
-                return (
-                  <TableRow key={row.id}>
-                    <TableCell className="font-medium">{row.name}</TableCell>
-                    <TableCell className="text-muted-foreground">{row.email}</TableCell>
-
-                    <TableCell>
-                      {isPending ? (
-                        <Badge variant="secondary" className="gap-1">
-                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                          Pending
-                        </Badge>
-                      ) : (
-                        <Badge className="gap-1">
-                          <CircleCheck className="h-3.5 w-3.5" />
-                          Granted
-                        </Badge>
-                      )}
-                    </TableCell>
-
-                    <TableCell className="text-right">
-                      {isPending ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button size="sm" className="gap-2" disabled={acceptM.isPending}>
-                              <ShieldCheck className="h-4 w-4" />
-                              Grant
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => acceptM.mutate(row.request_id)}
-                              disabled={acceptM.isPending}
-                            >
-                              Confirm grant
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="gap-2"
-                              disabled={revokeM.isPending}
-                            >
-                              <XCircle className="h-4 w-4" />
-                              Revoke
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => revokeM.mutate(row.membership_id)}
-                              disabled={revokeM.isPending}
-                            >
-                              Confirm revoke
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
+              <TableBody>
+                {pageRows.length === 0 && (
+                  <TableRow>
+                    <TableCell
+                      colSpan={4}
+                      className="py-10 text-center text-sm text-slate-500"
+                    >
+                      No teacher accounts found.
                     </TableCell>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
+                )}
+
+                {pageRows.map((row) => {
+                  const isPending = row.kind === "pending";
+
+                  return (
+                    <TableRow
+                      key={row.id}
+                      className="transition hover:bg-slate-50/70"
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={[
+                              "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-sm font-semibold",
+                              isPending
+                                ? "border-amber-200 bg-amber-50 text-amber-700"
+                                : "border-emerald-200 bg-emerald-50 text-emerald-700",
+                            ].join(" ")}
+                          >
+                            {normalize(row.name).charAt(0).toUpperCase() || "T"}
+                          </div>
+
+                          <div className="min-w-0">
+                            <div className="truncate font-medium text-slate-950">
+                              {row.name}
+                            </div>
+
+                            <div className="text-xs text-slate-500">
+                              Teacher account
+                            </div>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      <TableCell className="text-sm text-slate-500">
+                        <span className="block max-w-[240px] truncate">
+                          {row.email}
+                        </span>
+                      </TableCell>
+
+                      <TableCell>
+                        {isPending ? (
+                          <Badge className="gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700 hover:bg-amber-50">
+                            <Clock className="h-3.5 w-3.5 shrink-0" />
+                            Pending
+                          </Badge>
+                        ) : (
+                          <Badge className="gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
+                            <CircleCheck className="h-3.5 w-3.5 shrink-0" />
+                            Granted
+                          </Badge>
+                        )}
+                      </TableCell>
+
+                      <TableCell className="text-right">
+                        {isPending ? (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                disabled={acceptM.isPending}
+                                className="gap-2 bg-[#3e4c59] text-white hover:bg-[#616e7c]"
+                              >
+                                <ShieldCheck className="h-4 w-4 shrink-0" />
+                                Grant
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => acceptM.mutate(row.request_id)}
+                                disabled={acceptM.isPending}
+                              >
+                                Confirm grant
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        ) : (
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                disabled={revokeM.isPending}
+                                className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+                              >
+                                <XCircle className="h-4 w-4 shrink-0" />
+                                Revoke
+                              </Button>
+                            </DropdownMenuTrigger>
+
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                className="text-destructive focus:text-destructive"
+                                onClick={() => revokeM.mutate(row.membership_id)}
+                                disabled={revokeM.isPending}
+                              >
+                                Confirm revoke
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
-        {/* pagination */}
-        <div className="flex items-center justify-between gap-2 border-t p-4">
-          <div className="text-xs text-muted-foreground">
-            Page {safePage} of {totalPages}
+        {/* Pagination */}
+        <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-slate-500">
+            Showing {total === 0 ? 0 : start + 1}-
+            {Math.min(start + pageSize, total)} of {total} · Page {safePage} of{" "}
+            {totalPages}
           </div>
 
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setPage(1)} disabled={safePage === 1}>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage(1)}
+              disabled={safePage === 1}
+            >
               First
             </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -541,6 +630,7 @@ export default function AdminTeachers() {
               <ChevronLeft className="h-4 w-4" />
               Prev
             </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -551,6 +641,7 @@ export default function AdminTeachers() {
               Next
               <ChevronRight className="h-4 w-4" />
             </Button>
+
             <Button
               variant="outline"
               size="sm"
@@ -561,7 +652,7 @@ export default function AdminTeachers() {
             </Button>
           </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }

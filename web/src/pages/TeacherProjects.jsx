@@ -260,6 +260,18 @@ function ProjectRow({
           </Button>
 
           <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-6 rounded-none px-2 text-[10px]"
+            disabled={project.isDummy}
+          >
+            <Link to={`/dashboard/teacher/classes/${classId}/projects/${project.id}/performance`}>
+              📊 Performance
+            </Link>
+          </Button>
+          
+          <Button
             variant="outline"
             size="sm"
             className="h-6 rounded-none px-2 text-[10px]"

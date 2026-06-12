@@ -40,11 +40,11 @@ export function AuthProvider({ children }) {
     mutationFn: logoutApi,
     onSuccess: async () => { await qc.removeQueries({ queryKey: ['authUser'] }); }
   });
-
   const value = useMemo(() => ({
     booted,
     user: authQ.data?.user || null,
     roles: authQ.data?.roles || [],
+    school: authQ.data?.school || null,
     pendingRequests: authQ.data?.pendingRequests || [],
     refetchAuth: authQ.refetch,
     login: login.mutateAsync,

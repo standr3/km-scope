@@ -36,6 +36,9 @@ import TeacherProjects from "./pages/TeacherProjects";
 import StudentClasses from "./pages/StudentClasses";
 import ProjectPage from "./pages/ProjectPage";
 
+import ProjectPerformancePage from './pages/ProjectPerformancePage';
+
+
 function Protected() {
   const { booted, user } = useAuth();
   if (!booted) return <p style={{ padding: 24 }}>Initializing…</p>;
@@ -161,7 +164,15 @@ const router = createBrowserRouter([
           {
             path: "teacher/classes/:classId/projects/:projectId",
             element: <ProjectPage />,
-            handle: { header: "Project" },
+            handle: {
+              header: "Project",
+              layoutMode: "project",
+            },
+          },
+          {
+            path: "teacher/classes/:classId/projects/:projectId/performance",
+            element: <ProjectPerformancePage />,
+            handle: { header: "Performance Analysis" },
           },
           {
             path: "student/classes",
@@ -171,7 +182,10 @@ const router = createBrowserRouter([
           {
             path: "student/classes/:classId/projects/:projectId",
             element: <ProjectPage />,
-            handle: { header: "Project" },
+            handle: {
+              header: "Project",
+              layoutMode: "project",
+            },
           },
         ],
       },

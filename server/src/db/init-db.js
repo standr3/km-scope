@@ -486,6 +486,56 @@ CREATE INDEX IF NOT EXISTS idx_classrooms_school
         WHERE verdict = 'CREATE';
 
 
+
+
+
+
+
+        CREATE TABLE IF NOT EXISTS performance_sessions (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id uuid NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+  created_by uuid NOT NULL REFERENCES users(id),
+  label text NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS idx_perf_sessions_project
+  ON performance_sessions(project_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS session_scores (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  session_id uuid NOT NULL REFERENCES performance_sessions(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL REFERENCES users(id),
+  guest_name text NOT NULL,
+  trust_factor numeric(6,4) NOT NULL DEFAULT 0,
+  performance_pct numeric(6,2) NOT NULL DEFAULT 0,
+  raw_score numeric(8,2) NOT NULL DEFAULT 0,
+  nodes_created int NOT NULL DEFAULT 0,
+  nodes_created_accepted int NOT NULL DEFAULT 0,
+  nodes_created_rejected int NOT NULL DEFAULT 0,
+  edges_created int NOT NULL DEFAULT 0,
+  edges_created_accepted int NOT NULL DEFAULT 0,
+  edges_created_rejected int NOT NULL DEFAULT 0,
+  nodes_agreed int NOT NULL DEFAULT 0,
+  nodes_agreed_correct int NOT NULL DEFAULT 0,
+  nodes_agreed_wrong int NOT NULL DEFAULT 0,
+  edges_agreed int NOT NULL DEFAULT 0,
+  edges_agreed_correct int NOT NULL DEFAULT 0,
+  edges_agreed_wrong int NOT NULL DEFAULT 0,
+  nodes_disagreed int NOT NULL DEFAULT 0,
+  nodes_disagreed_correct int NOT NULL DEFAULT 0,
+  nodes_disagreed_wrong int NOT NULL DEFAULT 0,
+  edges_disagreed int NOT NULL DEFAULT 0,
+  edges_disagreed_correct int NOT NULL DEFAULT 0,
+  edges_disagreed_wrong int NOT NULL DEFAULT 0,
+  nodes_undecided int NOT NULL DEFAULT 0,
+  edges_undecided int NOT NULL DEFAULT 0,
+  tags jsonb NOT NULL DEFAULT '[]',
+  rewards jsonb NOT NULL DEFAULT '[]',
+  penalties jsonb NOT NULL DEFAULT '[]',
+  UNIQUE (session_id, user_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_scores_session ON session_scores(session_id);
+CREATE INDEX IF NOT EXISTS idx_session_scores_user ON session_scores(user_id);
   `;
 
   const c = await pool.connect();
