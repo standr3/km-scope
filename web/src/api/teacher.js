@@ -1,6 +1,6 @@
 import API from "./axios";
 
-export async function listTeacherClassesApi() {
+export async function listTeacherClassesWithProjectsApi() {
   const { data } = await API.get("/teacher/classes");
   return data.classes;
 }

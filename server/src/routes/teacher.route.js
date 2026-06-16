@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import { verifyAccess } from '../middleware/verifyAccess.js';
-import { listTeacherClasses } from '../controllers/classes.controller.js';
+import { listTeacherClassesWithProjects } from '../controllers/classes.controller.js';
 import { listClassProjects, createProject, updateProject, deleteProject } from '../controllers/projects.controller.js';
 
 const router = Router();
 router.use(verifyAccess);
 
 // classes taught by current teacher
-router.get('/classes', listTeacherClasses);
+router.get('/classes', listTeacherClassesWithProjects);
 
 // projects under a class
 router.get('/classes/:classId/projects', listClassProjects);

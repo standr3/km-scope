@@ -10,6 +10,16 @@ export async function revokeMemberApi(membershipId) {
   const { data } = await API.post(`/admin/members/${membershipId}/revoke`); return data;
 }
 
+export async function listMemberInvitesApi() {
+  const { data } = await API.get('/admin/member-invites'); return data.invites;
+}
+export async function createMemberInviteApi(b) {
+  const { data } = await API.post('/admin/member-invites', b); return data.invite;
+}
+export async function revokeMemberInviteApi(inviteId) {
+  const { data } = await API.post(`/admin/member-invites/${inviteId}/revoke`); return data.invite;
+}
+
 export async function listProgramsApi(p={}) {
   const qs=new URLSearchParams(); if(p.sort)qs.set('sort',p.sort); if(p.dir)qs.set('dir',p.dir);
   const { data } = await API.get(`/admin/programs?${qs}`); return data.programs;

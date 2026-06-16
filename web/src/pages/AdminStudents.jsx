@@ -1,491 +1,1087 @@
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { adminOverviewApi, acceptRequestApi, revokeMemberApi } from "../api/admin";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Loader2,
-  CircleCheck,
-  ShieldCheck,
-  XCircle,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight,
-  Users,
-  Clock,
-  UserCheck,
-} from "lucide-react";
+  adminOverviewApi,
+  acceptRequestApi,
+  revokeMemberApi,
+  listMemberInvitesApi,
+  createMemberInviteApi,
+  revokeMemberInviteApi,
+} from "../api/admin";
 
-/* shadcn */
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+function CheckIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="m5 12 4 4L19 6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
-function normalize(s) {
-  return String(s ?? "").toLowerCase().trim();
+function XIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M6 6l12 12M18 6 6 18"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PlusIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function MailIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M4 6h16v12H4V6Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinejoin="round"
+      />
+      <path
+        d="m4.5 7 7.5 6 7.5-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SearchIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function SortIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M8 7h11M8 12h8M8 17h5M4 6v12M4 18l2-2M4 18l-2-2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronLeftIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="m15 18-6-6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ChevronRightIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="m9 18 6-6-6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+const INVITE_STATUS_TABS = [
+  { value: "PENDING", label: "Pending" },
+  { value: "USED", label: "Used" },
+  { value: "REVOKED", label: "Revoked" },
+];
+
+function normalize(value) {
+  return String(value ?? "").toLowerCase().trim();
+}
+
+function getApiMessage(error, fallback) {
+  return error?.response?.data?.message || fallback;
+}
+
+function getInitialLetter(name, email) {
+  return normalize(name || email).charAt(0).toUpperCase() || "S";
+}
+
+function formatDate(value) {
+  if (!value) return "—";
+
+  try {
+    return new Intl.DateTimeFormat(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short",
+    }).format(new Date(value));
+  } catch {
+    return "—";
+  }
+}
+
+function getSortedHint(sort) {
+  if (sort.key === "name") {
+    return sort.dir === "asc" ? "Name · A to Z" : "Name · Z to A";
+  }
+
+  if (sort.key === "email") {
+    return sort.dir === "asc" ? "Email · A to Z" : "Email · Z to A";
+  }
+
+  return sort.dir === "asc"
+    ? "Status · Pending first"
+    : "Status · Granted first";
+}
+
+function getInviteStatusLabel(status) {
+  if (status === "PENDING") return "Pending invite";
+  if (status === "USED") return "Used";
+  if (status === "REVOKED") return "Revoked";
+  if (status === "EXPIRED") return "Expired";
+
+  return status || "Unknown";
+}
+
+function getInviteStatusClass(status) {
+  if (status === "PENDING") {
+    return "border-sky-200 bg-sky-50 text-sky-700";
+  }
+
+  if (status === "USED") {
+    return "border-emerald-200 bg-emerald-50 text-emerald-700";
+  }
+
+  if (status === "REVOKED") {
+    return "border-red-200 bg-red-50 text-red-700";
+  }
+
+  return "border-slate-200 bg-slate-50 text-slate-600";
+}
+
+function getInviteEmptyMessage(status) {
+  if (status === "PENDING") return "No pending student invitations.";
+  if (status === "USED") return "No used student invitations.";
+  if (status === "REVOKED") return "No revoked student invitations.";
+
+  return "No student invitations found.";
+}
+
+function buildStudentRows(requests, students) {
+  const pendingRows = requests.map((request) => ({
+    kind: "pending",
+    id: `request:${request.request_id}`,
+    request_id: request.request_id,
+    name: request.name ?? "(no name)",
+    email: request.email,
+    statusLabel: "Pending",
+  }));
+
+  const grantedRows = students.map((student) => ({
+    kind: "granted",
+    id: `membership:${student.membership_id}`,
+    membership_id: student.membership_id,
+    name: student.name ?? "(no name)",
+    email: student.email,
+    statusLabel: "Granted",
+  }));
+
+  return [...pendingRows, ...grantedRows];
+}
+
+function StudentCard({ row, isBusy, onGrant, onRevoke }) {
+  const isPending = row.kind === "pending";
+
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/70">
+      <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto] md:items-center">
+        <div className="flex min-w-0 items-center gap-3">
+          <div
+            className={[
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border text-sm font-semibold",
+              isPending
+                ? "border-amber-200 bg-amber-50 text-amber-700"
+                : "border-emerald-200 bg-emerald-50 text-emerald-700",
+            ].join(" ")}
+          >
+            {getInitialLetter(row.name, row.email)}
+          </div>
+
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2 className="truncate text-sm font-semibold text-slate-900">
+                {row.name || "Unnamed student"}
+              </h2>
+
+              <span
+                className={[
+                  "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                  isPending
+                    ? "border-amber-200 bg-amber-50 text-amber-700"
+                    : "border-emerald-200 bg-emerald-50 text-emerald-700",
+                ].join(" ")}
+              >
+                {isPending ? "Pending" : "Granted"}
+              </span>
+            </div>
+
+            <p className="mt-1 truncate text-xs text-slate-500">
+              {row.email || "No email"}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          {isPending ? (
+            <button
+              type="button"
+              onClick={onGrant}
+              disabled={isBusy}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <CheckIcon className="h-4 w-4" />
+              Grant
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={onRevoke}
+              disabled={isBusy}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-4 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <XIcon className="h-4 w-4" />
+              Revoke
+            </button>
+          )}
+        </div>
+      </div>
+    </article>
+  );
+}
+
+function StudentInviteCard({ invite, isBusy, onRevoke, onReinvite }) {
+  const isPending = invite.status === "PENDING";
+  const isUsed = invite.status === "USED";
+  const isRevoked = invite.status === "REVOKED";
+
+  return (
+    <article className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+      <div className="flex min-w-0 items-center gap-3">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700">
+          <MailIcon className="h-4 w-4" />
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="truncate text-sm font-semibold text-slate-900">
+              {invite.email}
+            </p>
+
+            <span
+              className={[
+                "rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                getInviteStatusClass(invite.status),
+              ].join(" ")}
+            >
+              {getInviteStatusLabel(invite.status)}
+            </span>
+          </div>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Invited {formatDate(invite.created_at)}
+          </p>
+
+          {invite.used_at ? (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Used {formatDate(invite.used_at)}
+            </p>
+          ) : null}
+
+          {invite.revoked_at ? (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Revoked {formatDate(invite.revoked_at)}
+            </p>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="flex justify-end gap-2">
+        {isPending ? (
+          <button
+            type="button"
+            onClick={onRevoke}
+            disabled={isBusy}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <XIcon className="h-4 w-4" />
+            Revoke
+          </button>
+        ) : null}
+
+        {isRevoked ? (
+          <button
+            type="button"
+            onClick={onReinvite}
+            disabled={isBusy}
+            className="inline-flex h-9 items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            <PlusIcon className="h-4 w-4" />
+            Reinvite
+          </button>
+        ) : null}
+
+        {isUsed ? (
+          <span className="inline-flex h-9 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 px-3 text-sm font-medium text-emerald-700">
+            Account created
+          </span>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
+function StudentInvitesPanel({
+  invites,
+  statusFilter,
+  onStatusFilterChange,
+  isLoading,
+  isError,
+  isBusy,
+  panelError,
+  onOpenInvite,
+  onRevokeInvite,
+  onReinviteInvite,
+}) {
+  const counts = invites.reduce(
+    (acc, invite) => {
+      acc[invite.status] = (acc[invite.status] || 0) + 1;
+      return acc;
+    },
+    {
+      PENDING: 0,
+      USED: 0,
+      REVOKED: 0,
+    }
+  );
+
+  const visibleInvites = invites.filter(
+    (invite) => invite.status === statusFilter
+  );
+
+  return (
+    <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+      <div className="mb-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">
+              Student invitations
+            </h2>
+
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+              {counts.PENDING || 0} pending
+            </span>
+          </div>
+
+          <p className="mt-1 text-xs text-slate-500">
+            Invite students by email. They can set up their account from Member Login.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onOpenInvite}
+          className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800"
+        >
+          <PlusIcon className="h-4 w-4" />
+          Invite student
+        </button>
+      </div>
+
+      <div className="mb-3 flex flex-wrap gap-2">
+        {INVITE_STATUS_TABS.map((tab) => {
+          const active = statusFilter === tab.value;
+
+          return (
+            <button
+              key={tab.value}
+              type="button"
+              onClick={() => onStatusFilterChange(tab.value)}
+              className={[
+                "inline-flex h-9 items-center justify-center rounded-xl border px-3 text-sm font-medium transition",
+                active
+                  ? "border-slate-900 bg-slate-900 text-white"
+                  : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900",
+              ].join(" ")}
+            >
+              {tab.label}
+
+              <span
+                className={[
+                  "ml-2 rounded-full px-2 py-0.5 text-[11px] font-semibold",
+                  active
+                    ? "bg-white/15 text-white"
+                    : "bg-slate-100 text-slate-600",
+                ].join(" ")}
+              >
+                {counts[tab.value] || 0}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {panelError ? (
+        <div className="mb-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          {panelError}
+        </div>
+      ) : null}
+
+      {isLoading ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-3 text-sm text-slate-500">
+          Loading invitations...
+        </div>
+      ) : null}
+
+      {isError ? (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-600">
+          Error loading invitations.
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && !visibleInvites.length ? (
+        <div className="rounded-xl border border-dashed border-slate-300 bg-white p-4 text-sm text-slate-500">
+          {getInviteEmptyMessage(statusFilter)}
+        </div>
+      ) : null}
+
+      {!isLoading && !isError && !!visibleInvites.length ? (
+        <div className="max-h-44 space-y-2 overflow-y-auto pr-1 [scrollbar-gutter:stable]">
+          {visibleInvites.map((invite) => (
+            <StudentInviteCard
+              key={invite.id}
+              invite={invite}
+              isBusy={isBusy}
+              onRevoke={() => onRevokeInvite(invite)}
+              onReinvite={() => onReinviteInvite(invite)}
+            />
+          ))}
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function InviteStudentModal({
+  open,
+  email,
+  error,
+  isSubmitting,
+  onEmailChange,
+  onClose,
+  onSubmit,
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 px-4 backdrop-blur-sm">
+      <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white">
+              <MailIcon className="h-4 w-4" />
+            </div>
+
+            <h2 className="text-lg font-semibold text-slate-900">
+              Invite student
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Add the student email. No email is sent yet; the student can use
+              Member Login with this address.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500 hover:bg-slate-50 hover:text-slate-900 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <XIcon className="h-4 w-4" />
+          </button>
+        </div>
+
+        <form onSubmit={onSubmit} className="grid gap-4">
+          {error ? (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          ) : null}
+
+          <label className="grid gap-1.5">
+            <span className="text-sm font-medium text-slate-700">
+              Student email
+            </span>
+
+            <input
+              type="email"
+              value={email}
+              onChange={onEmailChange}
+              placeholder="student@example.com"
+              disabled={isSubmitting}
+              required
+              className="h-10 rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            />
+          </label>
+
+          <div className="grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSubmitting}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={isSubmitting || !email.trim()}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              <PlusIcon className="h-4 w-4" />
+              Create invite
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminStudents() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
 
-  const ovQ = useQuery({
+  const overviewQuery = useQuery({
     queryKey: ["adminOverview"],
     queryFn: adminOverviewApi,
     retry: false,
   });
 
-  const acceptM = useMutation({
+  const invitesQuery = useQuery({
+    queryKey: ["memberInvites"],
+    queryFn: listMemberInvitesApi,
+    retry: false,
+  });
+
+  const acceptMutation = useMutation({
     mutationFn: acceptRequestApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminOverview"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+      queryClient.invalidateQueries({ queryKey: ["memberInvites"] });
+    },
   });
 
-  const revokeM = useMutation({
+  const revokeMutation = useMutation({
     mutationFn: revokeMemberApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["adminOverview"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["adminOverview"] });
+    },
   });
 
-  // UI state (hooks always run)
-  const [q, setQ] = React.useState("");
-  const [status, setStatus] = React.useState("all"); // all | pending | granted
-  const [pageSize, setPageSize] = React.useState(10);
-  const [page, setPage] = React.useState(1);
-  const [sort, setSort] = React.useState({ key: "name", dir: "asc" }); // name|email|status
+  const createInviteMutation = useMutation({
+    mutationFn: createMemberInviteApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["memberInvites"] });
+    },
+  });
 
-  const toggleSort = React.useCallback((key) => {
-    setSort((prev) => {
-      if (prev.key !== key) return { key, dir: "asc" };
-      return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
-    });
-  }, []);
+  const revokeInviteMutation = useMutation({
+    mutationFn: revokeMemberInviteApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["memberInvites"] });
+    },
+  });
 
-  const data = ovQ.data ?? { students: [], requests_students: [] };
+  const data = overviewQuery.data ?? {};
+  const requestsStudents = data.requests_students ?? [];
   const students = data.students ?? [];
-  const requests_students = data.requests_students ?? [];
 
-  const pendingCount = requests_students.length;
+  const invites = invitesQuery.data ?? [];
+  const studentInvites = useMemo(() => {
+    return invites.filter((invite) => invite.user_role === "student");
+  }, [invites]);
+
+  const [query, setQuery] = useState("");
+  const [status, setStatus] = useState("all");
+  const [pageSize, setPageSize] = useState(10);
+  const [page, setPage] = useState(1);
+  const [sort, setSort] = useState({
+    key: "name",
+    dir: "asc",
+  });
+
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteError, setInviteError] = useState("");
+  const [inviteStatusFilter, setInviteStatusFilter] = useState("PENDING");
+  const [inviteListError, setInviteListError] = useState("");
+
+  const pendingCount = requestsStudents.length;
   const grantedCount = students.length;
+  const pendingInviteCount = studentInvites.filter(
+    (invite) => invite.status === "PENDING"
+  ).length;
   const totalApplications = pendingCount + grantedCount;
+  const isBusy =
+    acceptMutation.isPending ||
+    revokeMutation.isPending ||
+    createInviteMutation.isPending ||
+    revokeInviteMutation.isPending;
 
-  const allRows = React.useMemo(() => {
-    const pending = requests_students.map((r) => ({
-      kind: "pending",
-      id: `req:${r.request_id}`,
-      request_id: r.request_id,
-      name: r.name ?? "(no name)",
-      email: r.email,
-      statusLabel: "Pending",
-    }));
+  const allRows = useMemo(() => {
+    return buildStudentRows(requestsStudents, students);
+  }, [requestsStudents, students]);
 
-    const granted = students.map((s) => ({
-      kind: "granted",
-      id: `mem:${s.membership_id}`,
-      membership_id: s.membership_id,
-      name: s.name ?? "(no name)",
-      email: s.email,
-      statusLabel: "Granted",
-    }));
-
-    return [...pending, ...granted];
-  }, [requests_students, students]);
-
-  const filteredSorted = React.useMemo(() => {
-    const nq = normalize(q);
+  const filteredSortedRows = useMemo(() => {
+    const normalizedQuery = normalize(query);
 
     let rows = allRows;
 
-    if (status !== "all") rows = rows.filter((r) => r.kind === status);
+    if (status !== "all") {
+      rows = rows.filter((row) => row.kind === status);
+    }
 
-    if (nq) {
-      rows = rows.filter((r) =>
-        `${normalize(r.name)} ${normalize(r.email)} ${normalize(r.statusLabel)}`.includes(nq)
+    if (normalizedQuery) {
+      rows = rows.filter((row) =>
+        `${normalize(row.name)} ${normalize(row.email)} ${normalize(
+          row.statusLabel
+        )}`.includes(normalizedQuery)
       );
     }
 
-    const dirMul = sort.dir === "asc" ? 1 : -1;
+    const directionMultiplier = sort.dir === "asc" ? 1 : -1;
 
-    const getVal = (r) => {
-      if (sort.key === "status") return r.kind;
-      return normalize(r[sort.key]);
+    const getSortValue = (row) => {
+      if (sort.key === "status") return row.kind;
+
+      return normalize(row[sort.key]);
     };
 
-    return [...rows].sort((a, b) => {
-      const av = getVal(a);
-      const bv = getVal(b);
-      if (av < bv) return -1 * dirMul;
-      if (av > bv) return 1 * dirMul;
+    return [...rows].sort((firstRow, secondRow) => {
+      const firstValue = getSortValue(firstRow);
+      const secondValue = getSortValue(secondRow);
+
+      if (firstValue < secondValue) return -1 * directionMultiplier;
+      if (firstValue > secondValue) return 1 * directionMultiplier;
+
       return 0;
     });
-  }, [allRows, q, status, sort]);
+  }, [allRows, query, status, sort]);
 
-  const total = filteredSorted.length;
+  const total = filteredSortedRows.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const safePage = Math.min(page, totalPages);
-  const start = (safePage - 1) * pageSize;
-  const pageRows = filteredSorted.slice(start, start + pageSize);
+  const startIndex = (safePage - 1) * pageSize;
+  const pageRows = filteredSortedRows.slice(startIndex, startIndex + pageSize);
+  const sortedHint = getSortedHint(sort);
 
-  React.useEffect(() => setPage(1), [q, status, pageSize, sort.key, sort.dir]);
+  useEffect(() => {
+    setPage(1);
+  }, [query, status, pageSize, sort.key, sort.dir]);
 
- if (ovQ.isLoading) {
-  return (
-    <div className="flex min-h-[220px] items-center rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-      Loading student accounts...
-    </div>
-  );
-}
+  const handleToggleSortDirection = () => {
+    setSort((currentSort) => ({
+      ...currentSort,
+      dir: currentSort.dir === "asc" ? "desc" : "asc",
+    }));
+  };
 
-if (ovQ.isError) {
-  return (
-    <div className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-      Error loading student accounts.
-    </div>
-  );
-}
+  const handleSortKeyChange = (nextSortKey) => {
+    setSort({
+      key: nextSortKey,
+      dir: "asc",
+    });
+  };
 
-return (
-  <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden xl:h-[calc(100vh-16vh-3rem)] xl:overflow-hidden">
-    {/* Page header */}
-    <section className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:h-1/3 xl:grid-cols-9">
-      <div className="border-b border-slate-200 bg-slate-50 p-5 xl:col-span-3 xl:border-b-0 xl:border-r">
-        <p className="text-xl font-semibold uppercase tracking-[0.16em] text-slate-500 sm:text-2xl">
-          Students
-        </p>
+  const handleGrant = (row) => {
+    if (!row.request_id) return;
 
-        <h1 className="mt-3 text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
-          {totalApplications}
-        </h1>
+    acceptMutation.mutate(row.request_id);
+  };
 
-        <p className="mt-2 text-sm text-slate-500">
-          Total applications
-        </p>
-      </div>
+  const handleRevoke = (row) => {
+    if (!row.membership_id) return;
 
-      <div className="flex flex-col gap-5 p-5 xl:col-span-6 xl:justify-between">
-        <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
-          <div className="min-w-0">
-            <h2 className="text-lg font-semibold text-slate-950">
-              Manage student access
-            </h2>
+    if (!window.confirm(`Revoke student access for "${row.email}"?`)) {
+      return;
+    }
 
-            <p className="mt-1 max-w-xl text-sm text-slate-500">
-              Review pending student requests, grant access, or revoke existing
-              memberships from the school workspace.
-            </p>
-          </div>
+    revokeMutation.mutate(row.membership_id);
+  };
 
-          <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:min-w-[300px]">
-            <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase leading-none text-amber-700">
-                Pending
-              </p>
+  const handleOpenInviteModal = () => {
+    setInviteError("");
+    setInviteListError("");
+    setInviteEmail("");
+    setInviteModalOpen(true);
+  };
 
-              <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
-                {pendingCount}
-              </p>
-            </div>
+  const handleCloseInviteModal = () => {
+    if (createInviteMutation.isPending) return;
 
-            <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
-              <p className="text-[10px] font-semibold uppercase leading-none text-emerald-700">
-                Granted
-              </p>
+    setInviteModalOpen(false);
+    setInviteError("");
+    setInviteEmail("");
+  };
 
-              <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
-                {grantedCount}
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
+  const handleCreateInvite = async (event) => {
+    event.preventDefault();
 
-    {/* Students table area */}
-    <section className="flex min-h-[520px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:min-h-0 xl:flex-1">
-      <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 2xl:flex-row 2xl:items-center 2xl:justify-between">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-slate-950">
-            Student accounts
-          </h3>
+    if (!inviteEmail.trim()) return;
 
-          <p className="mt-1 text-xs text-slate-500">
-            Search, filter, sort, and manage student admission status.
+    try {
+      setInviteError("");
+      setInviteListError("");
+
+      await createInviteMutation.mutateAsync({
+        email: inviteEmail.trim(),
+        role: "student",
+      });
+
+      setInviteStatusFilter("PENDING");
+      setInviteModalOpen(false);
+      setInviteEmail("");
+    } catch (error) {
+      setInviteError(
+        getApiMessage(error, "Could not create student invitation.")
+      );
+    }
+  };
+
+  const handleRevokeInvite = (invite) => {
+    if (!invite?.id) return;
+
+    if (!window.confirm(`Revoke invitation for "${invite.email}"?`)) {
+      return;
+    }
+
+    setInviteListError("");
+
+    revokeInviteMutation.mutate(invite.id, {
+      onError: (error) => {
+        setInviteListError(
+          getApiMessage(error, "Could not revoke student invitation.")
+        );
+      },
+    });
+  };
+
+  const handleReinviteInvite = async (invite) => {
+    if (!invite?.email) return;
+
+    try {
+      setInviteListError("");
+
+      await createInviteMutation.mutateAsync({
+        email: invite.email,
+        role: "student",
+      });
+
+      setInviteStatusFilter("PENDING");
+    } catch (error) {
+      setInviteListError(
+        getApiMessage(error, "Could not reactivate student invitation.")
+      );
+    }
+  };
+
+  if (overviewQuery.isLoading) {
+    return (
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-slate-500">Loading student accounts...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (overviewQuery.isError) {
+    return (
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-red-600">
+            Error loading student accounts.
           </p>
-        </div>
+        </section>
+      </main>
+    );
+  }
 
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-[minmax(220px,1fr)_170px_110px] 2xl:w-auto">
-          <Input
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-            placeholder="Search name, email..."
-            className="h-9 w-full"
+  return (
+    <>
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 grid-rows-[auto_auto_auto_minmax(0,1fr)_auto] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+          <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+            <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+              <div className="min-w-0">
+                <div className="flex items-center justify-between gap-3 sm:justify-start">
+                  <h1 className="truncate text-base font-semibold text-slate-900">
+                    Students
+                  </h1>
+
+                  <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                    {totalApplications} total
+                  </span>
+
+                  <span className="shrink-0 rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-xs font-semibold text-sky-700">
+                    {pendingInviteCount} invites
+                  </span>
+                </div>
+
+                <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
+                  Review pending student requests, manage existing student access and create invitations.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2">
+                <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-sky-700">
+                    Invited
+                  </div>
+
+                  <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                    {pendingInviteCount}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-amber-700">
+                    Pending
+                  </div>
+
+                  <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                    {pendingCount}
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                  <div className="text-[11px] font-semibold text-emerald-700">
+                    Granted
+                  </div>
+
+                  <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                    {grantedCount}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          <StudentInvitesPanel
+            invites={studentInvites}
+            statusFilter={inviteStatusFilter}
+            onStatusFilterChange={setInviteStatusFilter}
+            isLoading={invitesQuery.isLoading}
+            isError={invitesQuery.isError}
+            isBusy={isBusy}
+            panelError={inviteListError}
+            onOpenInvite={handleOpenInviteModal}
+            onRevokeInvite={handleRevokeInvite}
+            onReinviteInvite={handleReinviteInvite}
           />
 
-          <Select value={status} onValueChange={setStatus}>
-            <SelectTrigger className="h-9 w-full">
-              <SelectValue placeholder="Filter status" />
-            </SelectTrigger>
+          <section className="grid gap-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-3 lg:grid-cols-[minmax(220px,1fr)_160px_120px_minmax(210px,auto)] lg:items-center">
+            <div className="relative">
+              <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
 
-            <SelectContent>
-              <SelectItem value="all">All ({totalApplications})</SelectItem>
-              <SelectItem value="pending">Pending ({pendingCount})</SelectItem>
-              <SelectItem value="granted">Granted ({grantedCount})</SelectItem>
-            </SelectContent>
-          </Select>
+              <input
+                value={query}
+                onChange={(event) => setQuery(event.target.value)}
+                placeholder="Search name, email..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              />
+            </div>
 
-          <Select
-            value={String(pageSize)}
-            onValueChange={(v) => setPageSize(Number(v))}
-          >
-            <SelectTrigger className="h-9 w-full sm:col-span-2 lg:col-span-1">
-              <SelectValue />
-            </SelectTrigger>
+            <select
+              value={status}
+              onChange={(event) => setStatus(event.target.value)}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            >
+              <option value="all">All ({totalApplications})</option>
+              <option value="pending">Pending ({pendingCount})</option>
+              <option value="granted">Granted ({grantedCount})</option>
+            </select>
 
-            <SelectContent>
-              <SelectItem value="5">5 / page</SelectItem>
-              <SelectItem value="10">10 / page</SelectItem>
-              <SelectItem value="20">20 / page</SelectItem>
-              <SelectItem value="50">50 / page</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+            <select
+              value={String(pageSize)}
+              onChange={(event) => setPageSize(Number(event.target.value))}
+              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+            >
+              <option value="5">5 / page</option>
+              <option value="10">10 / page</option>
+              <option value="20">20 / page</option>
+              <option value="50">50 / page</option>
+            </select>
 
-      <div className="min-h-0 flex-1 overflow-y-auto p-4">
-        <div className="w-full overflow-x-auto rounded-md border border-slate-200">
-          <Table className="min-w-[680px]">
-            <TableHeader className="bg-slate-50">
-              <TableRow className="hover:bg-slate-50">
-                <TableHead className="w-[28%] text-slate-600">
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
-                    onClick={() => toggleSort("name")}
-                  >
-                    Name
-                    <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+              <select
+                value={sort.key}
+                onChange={(event) => handleSortKeyChange(event.target.value)}
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              >
+                <option value="name">Name</option>
+                <option value="email">Email</option>
+                <option value="status">Status</option>
+              </select>
 
-                <TableHead className="text-slate-600">
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
-                    onClick={() => toggleSort("email")}
-                  >
-                    Email
-                    <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+              <button
+                type="button"
+                onClick={handleToggleSortDirection}
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50"
+                title={sortedHint}
+              >
+                <SortIcon className="h-4 w-4" />
+                {sort.dir === "asc" ? "Asc" : "Desc"}
+              </button>
+            </div>
+          </section>
 
-                <TableHead className="w-[150px] text-slate-600">
-                  <Button
-                    variant="ghost"
-                    className="-ml-3 h-8 gap-2 px-3 text-slate-600 hover:bg-slate-100"
-                    onClick={() => toggleSort("status")}
-                  >
-                    Admission
-                    <ArrowUpDown className="h-4 w-4 opacity-60" />
-                  </Button>
-                </TableHead>
+          <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm [scrollbar-gutter:stable]">
+            {!pageRows.length && (
+              <div className="grid h-full min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">
+                    No student accounts found
+                  </p>
 
-                <TableHead className="w-[120px] text-right text-slate-600">
-                  Action
-                </TableHead>
-              </TableRow>
-            </TableHeader>
+                  <p className="mt-1 max-w-sm text-sm text-slate-500">
+                    Adjust the search or filter to see student accounts.
+                  </p>
+                </div>
+              </div>
+            )}
 
-            <TableBody>
-              {pageRows.length === 0 && (
-                <TableRow>
-                  <TableCell
-                    colSpan={4}
-                    className="py-10 text-center text-sm text-slate-500"
-                  >
-                    No student accounts found.
-                  </TableCell>
-                </TableRow>
-              )}
-
-              {pageRows.map((row) => {
-                const isPending = row.kind === "pending";
-
-                return (
-                  <TableRow
+            {!!pageRows.length && (
+              <div className="space-y-2">
+                {pageRows.map((row) => (
+                  <StudentCard
                     key={row.id}
-                    className="transition hover:bg-slate-50/70"
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={[
-                            "flex h-9 w-9 shrink-0 items-center justify-center rounded-md border text-sm font-semibold",
-                            isPending
-                              ? "border-amber-200 bg-amber-50 text-amber-700"
-                              : "border-emerald-200 bg-emerald-50 text-emerald-700",
-                          ].join(" ")}
-                        >
-                          {normalize(row.name).charAt(0).toUpperCase() || "S"}
-                        </div>
+                    row={row}
+                    isBusy={isBusy}
+                    onGrant={() => handleGrant(row)}
+                    onRevoke={() => handleRevoke(row)}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
 
-                        <div className="min-w-0">
-                          <div className="truncate font-medium text-slate-950">
-                            {row.name}
-                          </div>
+          <footer className="rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="text-xs text-slate-500">
+                Showing {total === 0 ? 0 : startIndex + 1}-
+                {Math.min(startIndex + pageSize, total)} of {total} · Page{" "}
+                {safePage} of {totalPages}
+              </div>
 
-                          <div className="text-xs text-slate-500">
-                            Student account
-                          </div>
-                        </div>
-                      </div>
-                    </TableCell>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setPage(1)}
+                  disabled={safePage === 1}
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  First
+                </button>
 
-                    <TableCell className="text-sm text-slate-500">
-                      <span className="block max-w-[240px] truncate">
-                        {row.email}
-                      </span>
-                    </TableCell>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPage((currentPage) => Math.max(1, currentPage - 1))
+                  }
+                  disabled={safePage === 1}
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  <ChevronLeftIcon className="h-4 w-4" />
+                  Prev
+                </button>
 
-                    <TableCell>
-                      {isPending ? (
-                        <Badge className="gap-1 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-amber-700 hover:bg-amber-50">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          Pending
-                        </Badge>
-                      ) : (
-                        <Badge className="gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-700 hover:bg-emerald-50">
-                          <CircleCheck className="h-3.5 w-3.5 shrink-0" />
-                          Granted
-                        </Badge>
-                      )}
-                    </TableCell>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setPage((currentPage) =>
+                      Math.min(totalPages, currentPage + 1)
+                    )
+                  }
+                  disabled={safePage === totalPages}
+                  className="inline-flex h-9 items-center justify-center gap-1 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  Next
+                  <ChevronRightIcon className="h-4 w-4" />
+                </button>
 
-                    <TableCell className="text-right">
-                      {isPending ? (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              disabled={acceptM.isPending}
-                              className="gap-2 bg-[#3e4c59] text-white hover:bg-[#616e7c]"
-                            >
-                              <ShieldCheck className="h-4 w-4 shrink-0" />
-                              Grant
-                            </Button>
-                          </DropdownMenuTrigger>
+                <button
+                  type="button"
+                  onClick={() => setPage(totalPages)}
+                  disabled={safePage === totalPages}
+                  className="h-9 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+                >
+                  Last
+                </button>
+              </div>
+            </div>
+          </footer>
+        </section>
+      </main>
 
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => acceptM.mutate(row.request_id)}
-                              disabled={acceptM.isPending}
-                            >
-                              Confirm grant
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      ) : (
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              disabled={revokeM.isPending}
-                              className="gap-2 border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-                            >
-                              <XCircle className="h-4 w-4 shrink-0" />
-                              Revoke
-                            </Button>
-                          </DropdownMenuTrigger>
-
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              className="text-destructive focus:text-destructive"
-                              onClick={() => revokeM.mutate(row.membership_id)}
-                              disabled={revokeM.isPending}
-                            >
-                              Confirm revoke
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
-
-      {/* Pagination */}
-      <div className="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="text-xs text-slate-500">
-          Showing {total === 0 ? 0 : start + 1}-
-          {Math.min(start + pageSize, total)} of {total} · Page {safePage} of{" "}
-          {totalPages}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(1)}
-            disabled={safePage === 1}
-          >
-            First
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={safePage === 1}
-            className="gap-1"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Prev
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-            disabled={safePage === totalPages}
-            className="gap-1"
-          >
-            Next
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage(totalPages)}
-            disabled={safePage === totalPages}
-          >
-            Last
-          </Button>
-        </div>
-      </div>
-    </section>
-  </div>
-);
+      <InviteStudentModal
+        open={inviteModalOpen}
+        email={inviteEmail}
+        error={inviteError}
+        isSubmitting={createInviteMutation.isPending}
+        onEmailChange={(event) => setInviteEmail(event.target.value)}
+        onClose={handleCloseInviteModal}
+        onSubmit={handleCreateInvite}
+      />
+    </>
+  );
 }

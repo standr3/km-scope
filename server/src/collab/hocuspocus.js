@@ -27,7 +27,7 @@ export async function onStoreDocument({ documentName, document }) {
 
 export function createCollabServer() {
   return new Server({
-    port: Number(process.env.PORT || process.env.HOCUSPOCUS_PORT || 1234),
+    port: Number(process.env.HOCUSPOCUS_PORT || process.env.PORT || 1234),
     onLoadDocument,
     onStoreDocument,
   });

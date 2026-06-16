@@ -2,11 +2,12 @@ import React, { useEffect, useState } from "react";
 import { Background, ReactFlow } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Link } from "react-router-dom";
+
 const navItems = [
   { label: "Product", opensMenu: true },
   { label: "For Teachers", opensMenu: true },
   { label: "For Schools", opensMenu: true },
-  { label: "Contact", opensMenu: false },
+  { label: "Contact", href: "#contact", opensMenu: false },
 ];
 
 const dropdownItems = [
@@ -30,36 +31,36 @@ const dropdownItems = [
 const desktopPreviewNodes = [
   {
     id: "1",
-    position: { x: 800, y: 230 },
-    data: { label: <span className="text-black">Lesson Scope</span> },
+    position: { x: 1090, y: 200 },
+    data: { label: <span className="text-slate-900">Lesson Scope</span> },
   },
   {
     id: "2",
-    position: { x: 1080, y: 330 },
-    data: { label: <span className="text-black">Student Concept</span> },
+    position: { x: 1480, y: 400 },
+    data: { label: <span className="text-slate-900">Student Concept</span> },
   },
   {
     id: "3",
-    position: { x: 850, y: 470 },
-    data: { label: <span className="text-black">Teacher Validation</span> },
+    position: { x: 1260, y: 600 },
+    data: { label: <span className="text-slate-900">Teacher Validation</span> },
   },
 ];
 
 const compactPreviewNodes = [
   {
     id: "1",
-    position: { x: 24, y: 500 },
-    data: { label: <span className="text-black">Lesson Scope</span> },
+    position: { x: 24, y: 650 },
+    data: { label: <span className="text-slate-900">Lesson Scope</span> },
   },
   {
     id: "2",
-    position: { x: 170, y: 590 },
-    data: { label: <span className="text-black">Student Concept</span> },
+    position: { x: 200, y: 750 },
+    data: { label: <span className="text-slate-900">Student Concept</span> },
   },
   {
     id: "3",
-    position: { x: 24, y: 700 },
-    data: { label: <span className="text-black">Teacher Validation</span> },
+    position: { x: 24, y: 800 },
+    data: { label: <span className="text-slate-900">Teacher Validation</span> },
   },
 ];
 
@@ -156,19 +157,58 @@ function HeroReactFlowCanvas() {
       defaultNodes={nodes}
       defaultEdges={previewEdges}
       defaultViewport={{ x: 0, y: 0, zoom: 1 }}
-      nodesDraggable
+      nodesDraggable={false}
       nodesConnectable={false}
-      elementsSelectable
+      elementsSelectable={false}
+      nodesFocusable={false}
+      edgesFocusable={false}
       panOnDrag={false}
       zoomOnScroll={false}
       zoomOnPinch={false}
       zoomOnDoubleClick={false}
       preventScrolling={false}
       onlyRenderVisibleElements
-      className="[&_.react-flow__node]:text-black"
+      className={[
+        "[&_.react-flow__node]:rounded-xl",
+        "[&_.react-flow__node]:border",
+        "[&_.react-flow__node]:border-slate-200",
+        "[&_.react-flow__node]:bg-white",
+        "[&_.react-flow__node]:px-4",
+        "[&_.react-flow__node]:py-2",
+        "[&_.react-flow__node]:text-sm",
+        "[&_.react-flow__node]:font-semibold",
+        "[&_.react-flow__node]:shadow-sm",
+        "[&_.react-flow__edge-path]:stroke-slate-300",
+      ].join(" ")}
     >
-      <Background />
+      <Background color="#e2e8f0" gap={24} />
     </ReactFlow>
+  );
+}
+
+function HeaderNavItem({ item, onMenuChange }) {
+  if (item.href) {
+    return (
+      <a
+        href={item.href}
+        onMouseEnter={() => onMenuChange(false)}
+        onFocus={() => onMenuChange(false)}
+        className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus:bg-slate-100 focus:text-slate-950 focus:outline-none"
+      >
+        {item.label}
+      </a>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onMouseEnter={() => onMenuChange(item.opensMenu)}
+      onFocus={() => onMenuChange(item.opensMenu)}
+      className="inline-flex h-10 items-center justify-center rounded-lg px-3 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-slate-950 focus:bg-slate-100 focus:text-slate-950 focus:outline-none"
+    >
+      {item.label}
+    </button>
   );
 }
 
@@ -197,37 +237,53 @@ export default function WelcomePage({ onLogin }) {
   return (
     <div
       onScroll={handleScroll}
-      className="h-screen overflow-y-auto bg-black text-white"
+      className="h-screen overflow-y-auto bg-slate-50 text-slate-950"
     >
       <header
-        className={`fixed left-0 top-0 z-50 h-[97px] w-full transition-all duration-300 ease-in-out ${headerIsHidden ? "-translate-y-[97px]" : "translate-y-0"
-          } ${menuOpen
-            ? "bg-white text-black"
-            : "bg-black text-white hover:bg-white hover:text-black"
-          }`}
+        className={`fixed left-0 top-0 z-50 h-20 w-full border-b border-slate-200 bg-white/95 text-slate-950 shadow-sm backdrop-blur transition-all duration-300 ease-in-out ${
+          headerIsHidden ? "-translate-y-20" : "translate-y-0"
+        }`}
         onMouseLeave={() => setMenuOpen(false)}
       >
-        <div className="mx-auto flex h-full max-w-[1440px] items-center justify-between px-6 sm:px-10 lg:px-16">
-          <div className="font-bold">Knowledge Maps</div>
+        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link
+            to="/"
+            className="text-base font-bold tracking-tight text-slate-950"
+          >
+            KmScope
+          </Link>
 
-          <nav className="hidden h-full items-center gap-8 text-sm md:flex">
+          <nav className="hidden h-full items-center gap-1 text-sm md:flex">
             {navItems.map((item) => (
-              <button
+              <HeaderNavItem
                 key={item.label}
-                type="button"
-                onMouseEnter={() => setMenuOpen(item.opensMenu)}
-                onFocus={() => setMenuOpen(item.opensMenu)}
-                className="h-full border-b-2 border-transparent hover:border-current focus:border-current focus:outline-none"
-              >
-                {item.label}
-              </button>
+                item={item}
+                onMenuChange={setMenuOpen}
+              />
             ))}
           </nav>
+
+          <div className="hidden items-center gap-3 md:flex">
+            <Link
+              to="/login"
+              onClick={onLogin}
+              className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+            >
+              Login
+            </Link>
+
+            <Link
+              to="/signup"
+              className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+            >
+              Request access
+            </Link>
+          </div>
 
           <button
             type="button"
             aria-expanded={menuOpen}
-            className="md:hidden"
+            className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm md:hidden"
             onClick={() => setMenuOpen((current) => !current)}
           >
             Menu
@@ -235,58 +291,81 @@ export default function WelcomePage({ onLogin }) {
         </div>
 
         <div
-          className={`absolute left-0 top-[97px] w-full bg-white text-black transition-[max-height,opacity] duration-300 ${menuOpen
-            ? "max-h-[calc(100vh-97px)] overflow-y-auto opacity-100 md:max-h-[430px]"
-            : "max-h-0 overflow-hidden opacity-0"
-            }`}
+          className={`absolute left-0 top-20 w-full border-b border-slate-200 bg-white text-slate-950 shadow-lg transition-[max-height,opacity] duration-300 ${
+            menuOpen
+              ? "max-h-[calc(100vh-80px)] overflow-y-auto opacity-100 md:max-h-[420px]"
+              : "max-h-0 overflow-hidden opacity-0"
+          }`}
         >
-          <div className="mx-auto grid max-w-[1440px] gap-8 px-6 py-8 sm:px-10 md:grid-cols-2 lg:grid-cols-4 lg:px-16 lg:py-12">
+          <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-5 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8 lg:py-6">
             {dropdownItems.map((item) => (
               <div
                 key={item.title}
-                className="border-l border-neutral-200 pl-6 lg:pl-8"
+                className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                <div className="mb-6 h-12 w-12 bg-neutral-900"></div>
-                <h3 className="mb-4 text-xl font-semibold">{item.title}</h3>
-                <p className="text-sm leading-6 text-neutral-500">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-slate-100">
+                  <div className="h-4 w-4 rounded-full bg-slate-900" />
+                </div>
+
+                <h3 className="text-base font-semibold text-slate-950">
+                  {item.title}
+                </h3>
+
+                <p className="mt-2 text-sm leading-6 text-slate-500">
                   {item.description}
                 </p>
               </div>
             ))}
 
-            <div className="rounded-sm bg-neutral-100 p-6 lg:p-8">
-              <h3 className="mb-4 text-xl font-semibold">Invite-only beta</h3>
-              <p className="mb-6 text-sm leading-6 text-neutral-500">
-                Schools and teachers can request access before creating
-                classrooms and projects.
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-5">
+              <h3 className="text-base font-semibold text-slate-950">
+                Invite-only onboarding
+              </h3>
+
+              <p className="mt-2 text-sm leading-6 text-slate-500">
+                Schools can request access. Teachers and students join later
+                through administrator invitations.
               </p>
 
-              <button type="button" className="text-sm font-semibold">
-                Request access →
-              </button>
+              <div className="mt-5 grid gap-2">
+                <Link
+                  to="/signup/school"
+                  className="inline-flex h-9 items-center justify-center rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+                >
+                  Request access
+                </Link>
+
+                <Link
+                  to="/login"
+                  onClick={onLogin}
+                  className="inline-flex h-9 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+                >
+                  Login
+                </Link>
+              </div>
             </div>
           </div>
         </div>
       </header>
 
       <main>
-        <section className="relative min-h-[920px] overflow-hidden bg-neutral-900 xl:min-h-screen">
-          <div className="absolute inset-0">
+        <section className="relative min-h-[860px] overflow-hidden bg-slate-50 xl:min-h-screen">
+          <div className="absolute inset-0 opacity-80">
             <HeroReactFlowCanvas />
           </div>
 
-          <div className="pointer-events-none relative z-10 px-6 pt-[150px] sm:px-10 sm:pt-[170px] xl:px-16 xl:pt-[190px]">
-            <div className="mx-auto w-full max-w-[1440px]">
-              <div className="max-w-2xl">
-                <p className="mb-5 text-sm font-semibold uppercase tracking-[0.24em] text-neutral-400">
+          <div className="pointer-events-none relative z-10 px-4 pt-32 sm:px-6 sm:pt-36 lg:px-8 xl:pt-40">
+            <div className="mx-auto w-full max-w-7xl">
+              <div className="max-w-2xl rounded-2xl border border-slate-200 bg-white/90 p-6 shadow-sm backdrop-blur sm:p-8 lg:p-10">
+                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                   Collaborative knowledge mapping
                 </p>
 
-                <h1 className="text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">
+                <h1 className="mt-4 text-4xl font-bold tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
                   Turn lessons into validated knowledge maps.
                 </h1>
 
-                <p className="mt-6 max-w-xl text-base leading-7 text-neutral-300 sm:text-lg">
+                <p className="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
                   Students propose the concepts and connections they believe
                   matter. Classmates review them. Teachers validate the final
                   map and get a clearer view of how the class understands the
@@ -295,51 +374,58 @@ export default function WelcomePage({ onLogin }) {
 
                 <div className="pointer-events-auto mt-8 flex flex-col gap-3 sm:flex-row">
                   <Link
+                    to="/signup/school"
+                    className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm hover:bg-slate-800"
+                  >
+                    Request school access
+                  </Link>
+
+                  <Link
                     to="/login"
                     onClick={onLogin}
-                    className="inline-flex rounded-md bg-white px-5 py-3 text-sm font-semibold text-black"
+                    className="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
                   >
                     Login
                   </Link>
-
-                  <button
-                    type="button"
-                    className="rounded-md border border-white/20 px-5 py-3 text-sm font-semibold text-white"
-                  >
-                    Request access
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section className="bg-neutral-950 px-6 py-20 sm:px-10 lg:px-16">
-          <div className="mx-auto max-w-[1440px]">
+        <section className="border-t border-slate-200 bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto w-full max-w-7xl">
             <div className="max-w-3xl">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.24em] text-neutral-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 How it works
               </p>
 
-              <h2 className="text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 A project becomes the shared space for understanding a lesson.
               </h2>
 
-              <p className="mt-6 text-base leading-7 text-neutral-300">
+              <p className="mt-5 text-base leading-7 text-slate-600">
                 Each project contains a map of concepts and relationships.
                 Students contribute to it, review each other’s work and learn
                 from the teacher’s final validation.
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-              {processSteps.map((step) => (
+            <div className="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+              {processSteps.map((step, index) => (
                 <article
                   key={step.title}
-                  className="border border-white/10 bg-white/[0.03] p-6"
+                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <h3 className="text-xl font-semibold">{step.title}</h3>
-                  <p className="mt-4 text-sm leading-6 text-neutral-400">
+                  <div className="mb-5 inline-flex h-9 w-9 items-center justify-center rounded-lg bg-slate-100 text-sm font-bold text-slate-700">
+                    {index + 1}
+                  </div>
+
+                  <h3 className="text-base font-semibold text-slate-950">
+                    {step.title}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
                     {step.description}
                   </p>
                 </article>
@@ -348,26 +434,26 @@ export default function WelcomePage({ onLogin }) {
           </div>
         </section>
 
-        <section className="bg-neutral-900 px-6 py-20 sm:px-10 lg:px-16">
-          <div className="mx-auto grid max-w-[1440px] gap-12 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="border-t border-slate-200 bg-slate-50 px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-12">
             <div>
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.24em] text-neutral-500">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Teacher validation
               </p>
 
-              <h2 className="text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 Not every concept belongs in the map.
               </h2>
             </div>
 
-            <div className="space-y-6 text-base leading-7 text-neutral-300">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 text-base leading-7 text-slate-600 shadow-sm sm:p-8">
               <p>
                 A good concept is relevant to the lesson, has the right level
                 of detail and helps students understand the topic. It should not
                 be too generic, too narrow or disconnected from the subject.
               </p>
 
-              <p>
+              <p className="mt-5">
                 When a teacher rejects a concept, the connected relationships
                 can also become invalid. This makes the graph more than a visual
                 board: it becomes a structured model of what the class is
@@ -377,35 +463,77 @@ export default function WelcomePage({ onLogin }) {
           </div>
         </section>
 
-        <section className="bg-neutral-800 px-6 py-20 sm:px-10 lg:px-16">
-          <div className="mx-auto max-w-[1440px]">
+        <section className="border-t border-slate-200 bg-white px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+          <div className="mx-auto w-full max-w-7xl">
             <div className="max-w-3xl">
-              <p className="mb-4 text-sm font-semibold uppercase tracking-[0.24em] text-neutral-400">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
                 Learning insights
               </p>
 
-              <h2 className="text-3xl font-bold sm:text-4xl">
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">
                 See how students think, not only what they submit.
               </h2>
 
-              <p className="mt-6 text-base leading-7 text-neutral-300">
+              <p className="mt-5 text-base leading-7 text-slate-600">
                 Reviews, contributions and teacher decisions can reveal
                 patterns in how students identify, evaluate and connect ideas.
               </p>
             </div>
 
-            <div className="mt-12 grid gap-6 md:grid-cols-3">
+            <div className="mt-10 grid gap-4 md:grid-cols-3">
               {insightItems.map((item) => (
                 <article
                   key={item.title}
-                  className="border border-white/10 bg-black/20 p-6"
+                  className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"
                 >
-                  <h3 className="text-xl font-semibold">{item.title}</h3>
-                  <p className="mt-4 text-sm leading-6 text-neutral-300">
+                  <h3 className="text-base font-semibold text-slate-950">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-3 text-sm leading-6 text-slate-500">
                     {item.description}
                   </p>
                 </article>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section
+          id="contact"
+          className="border-t border-slate-200 bg-slate-950 px-4 py-16 text-white sm:px-6 lg:px-8 lg:py-20"
+        >
+          <div className="mx-auto grid w-full max-w-7xl gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="max-w-2xl">
+              <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+                Access
+              </p>
+
+              <h2 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Start with a school access request.
+              </h2>
+
+              <p className="mt-5 text-base leading-7 text-slate-300">
+                Organization accounts are approved first. After approval, the
+                first administrator can invite teachers and students by email.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+              <Link
+                to="/signup/school"
+                className="inline-flex h-11 items-center justify-center rounded-lg bg-white px-5 text-sm font-semibold text-slate-950 shadow-sm hover:bg-slate-100"
+              >
+                Request school access
+              </Link>
+
+              <Link
+                to="/login"
+                onClick={onLogin}
+                className="inline-flex h-11 items-center justify-center rounded-lg border border-white/15 bg-white/[0.04] px-5 text-sm font-semibold text-slate-200 hover:bg-white/[0.08]"
+              >
+                Login
+              </Link>
             </div>
           </div>
         </section>

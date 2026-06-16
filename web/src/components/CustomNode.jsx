@@ -1,26 +1,33 @@
 import React from "react";
 import { Handle, Position } from "@xyflow/react";
-import { Ban, CircleCheckBig, Trash2, UserRoundPen, School, Ellipsis, Check, X } from "lucide-react";
+import { Check, Ellipsis, Trash2, X } from "lucide-react";
+
 const STATUS_STYLES = {
   Accepted: {
-    pill: "bg-[#EAF7EF] text-[#065F2C]",
-    iconBg: "bg-[#24994F] text-white",
+    pill: "bg-emerald-50 text-emerald-700 ring-emerald-200",
+    iconBg: "bg-emerald-600 text-white",
+    buttonActive: "border-emerald-300 bg-emerald-50 text-emerald-700",
+    buttonHover:
+      "hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700",
     icon: Check,
-    accent: "#24994F",
   },
   Pending: {
-    pill: "bg-[#FFF4D6] text-[#7A4B00]",
-    iconBg: "bg-[#D99A00] text-white",
+    pill: "bg-amber-50 text-amber-700 ring-amber-200",
+    iconBg: "bg-amber-500 text-white",
+    buttonActive: "border-amber-300 bg-amber-50 text-amber-700",
+    buttonHover:
+      "hover:border-amber-300 hover:bg-amber-50 hover:text-amber-700",
     icon: Ellipsis,
-    accent: "#D99A00",
   },
   Rejected: {
-    pill: "bg-[#FFF1F1] text-[#7A0000]",
-    iconBg: "bg-[#B91C1C] text-white",
+    pill: "bg-rose-50 text-rose-700 ring-rose-200",
+    iconBg: "bg-rose-600 text-white",
+    buttonActive: "border-rose-300 bg-rose-50 text-rose-700",
+    buttonHover: "hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
     icon: X,
-    accent: "#B91C1C",
   },
 };
+
 export default function CustomNode({ id, data, selected }) {
   const isOwner = data.projectRole === "OWNER";
   const isCreator = data.createdBy === data.currentUserId;
@@ -39,7 +46,6 @@ export default function CustomNode({ id, data, selected }) {
   const upCounter = rs.upCount || 0;
   const downCounter = rs.downCount || 0;
 
-  // const nodeId = id.slice(0, 4);
   const status = ownerUpped ? "Accepted" : ownerDowned ? "Rejected" : "Pending";
   const st = STATUS_STYLES[status] ?? STATUS_STYLES.Pending;
   const StatusIcon = st.icon;
@@ -48,187 +54,165 @@ export default function CustomNode({ id, data, selected }) {
     <Handle
       type="target"
       position={Position.Top}
+      className="!h-2.5 !w-2.5 !border-2 !border-white !bg-slate-400"
     />
-  )
+  );
+
   const bottomHandleElm = (
     <Handle
       type="source"
       position={Position.Bottom}
+      className="!h-2.5 !w-2.5 !border-2 !border-white !bg-slate-400"
     />
-  )
+  );
+
   const pillElm = !ownerCreated && (
-
-
-    // <span className="my-[4px] rounded-full items-center align-baseline flex  h-fit w-fit pl-[2px] pr-[5px] h-[23px]  text-[8px] bg-[#52606D] text-[#fff]">
-    //   <Ellipsis className=" my-[2px] p-[2px] mr-[4px]  bg-[#1F2933] rounded-full" strokeWidth={3} size={10} />
-    //   {status}
-    // </span>
-
     <span
       className={[
-        "my-[4px] rounded-full items-center align-baseline flex h-fit w-fit pl-[2px] pr-[5px] h-[23px] text-[8px]",
+        "inline-flex h-6 w-fit items-center gap-1.5 rounded-full px-2 text-xs font-semibold ring-1",
         st.pill,
       ].join(" ")}
     >
-      <StatusIcon
+      <span
         className={[
-          "my-[2px] p-[2px] mr-[4px] rounded-full",
+          "inline-flex h-4 w-4 items-center justify-center rounded-full",
           st.iconBg,
         ].join(" ")}
-        strokeWidth={3}
-        size={10}
-      />
+      >
+        <StatusIcon strokeWidth={3} size={10} />
+      </span>
 
       {status}
     </span>
-  )
-  const deleteBtnElm = canDelete && (
+  );
 
+  const deleteBtnElm = canDelete && (
     <button
-      className=" p-[1px] m-0 leading-none inline-flex items-center justify-center  text-[#FFF]    cursor-pointer hover:text-[#CC2222] border-none rounded-full bg-transparent"
+      type="button"
+      className="nodrag nopan inline-flex h-6 w-6 items-center justify-center rounded-md text-slate-400 transition hover:bg-rose-50 hover:text-rose-600"
       onClick={() => data.onDelete?.(id)}
+      aria-label="Delete node"
     >
-      <Trash2 strokeWidth={2} size={8} />
+      <Trash2 strokeWidth={2} size={13} />
     </button>
-  )
+  );
+
   const labelElm = (
-    <span className="antialiased md:subpixel-antialiased text-[24px] text-[#1F2933] wrap-break-word   ">
+    <span className="block max-w-[220px] break-words text-base font-semibold leading-6 tracking-tight text-slate-950">
       {data.label}
     </span>
-  )
-  const creatorElm = (
-    <span className="text-[8px] text-[#FFF] truncate max-w-35">
-      {
-        isCreator
-          ? <em>by you</em>
-          : <em>by {ownerCreated ? "Teacher" : rs.creatorName ?? "unknown"}</em>
-      }
-    </span>
-  )
-  const reviewBtnsElm = (showButtons && (
-    <div className="flex gap-[2px] ml-auto">
+  );
 
-      <button 
+  const creatorElm = (
+    <span className="truncate text-xs font-medium text-slate-500">
+      {isCreator ? (
+        <em>by you</em>
+      ) : (
+        <em>by {ownerCreated ? "Teacher" : rs.creatorName ?? "unknown"}</em>
+      )}
+    </span>
+  );
+
+  const reviewBtnsElm = showButtons && (
+    <div className="ml-auto flex items-center gap-1.5">
+      <button
+        type="button"
         disabled={reviewDisabled}
         onClick={data.onVoteUp}
         className={[
-          "nodrag nopan group",
-          "inline-flex h-[14px] items-center",
-          "rounded-[2px] border",
-          "pl-1 pr-1.5",
-          "transition",
+          "nodrag nopan group inline-flex h-7 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition",
           reviewDisabled
-            ? "border-[#DDDDD8] text-[#DDDDD8] cursor-not-allowed"
+            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300"
             : upActive
-              ? "border-[#2EAD5E] bg-[#E6F5EC] text-[#2EAD5E] cursor-pointer"
+              ? "cursor-pointer border-emerald-300 bg-emerald-50 text-emerald-700"
               : [
-                "border-[#D9E0E3] bg-[#F5F7FA] text-[#829196] cursor-pointer",
-                "hover:border-[#2EAD5E] hover:bg-[#E6F5EC] hover:text-[#2EAD5E]",
-              ].join(" "),
+                  "cursor-pointer border-slate-200 bg-white text-slate-500 shadow-sm",
+                  "hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700",
+                ].join(" "),
         ].join(" ")}
       >
-        <Check className="shrink-0" strokeWidth={2} size={12} />
+        <Check className="shrink-0" strokeWidth={2.5} size={13} />
 
         <span
           className={[
-            "ml-[4px] translate-y-[-0.5px]",
-            "text-[7px] leading-none transition",
+            "ml-1 leading-none transition",
             reviewDisabled
-              ? "text-[#DDDDD8]"
+              ? "text-slate-300"
               : upActive
-                ? "text-[#2EAD5E]"
-                : "text-[#5B696E] group-hover:text-[#2EAD5E]",
+                ? "text-emerald-700"
+                : "text-slate-500 group-hover:text-emerald-700",
           ].join(" ")}
         >
           {upCounter}
         </span>
       </button>
 
-      <button 
+      <button
+        type="button"
         disabled={reviewDisabled}
         onClick={data.onVoteDown}
         className={[
-          "nodrag nopan group",
-          "inline-flex h-[14px] items-center",
-          "rounded-[2px] border",
-          "pl-1 pr-1.5",
-          "transition",
+          "nodrag nopan group inline-flex h-7 items-center justify-center rounded-lg border px-2 text-xs font-semibold transition",
           reviewDisabled
-            ? "border-[#DDDDD8] text-[#DDDDD8] cursor-not-allowed"
+            ? "cursor-not-allowed border-slate-200 bg-slate-50 text-slate-300"
             : downActive
-              ? "border-[#CC2222] bg-[#FFEAEA] text-[#990000] cursor-pointer"
+              ? "cursor-pointer border-rose-300 bg-rose-50 text-rose-700"
               : [
-                "border-[#D9E0E3] bg-[#F5F7FA] text-[#829196] cursor-pointer",
-                "hover:border-[#CC2222] hover:bg-[#FFEAEA] hover:text-[#CC2222]",
-              ].join(" "),
+                  "cursor-pointer border-slate-200 bg-white text-slate-500 shadow-sm",
+                  "hover:border-rose-300 hover:bg-rose-50 hover:text-rose-700",
+                ].join(" "),
         ].join(" ")}
       >
-        <X className="shrink-0" strokeWidth={2} size={12} />
+        <X className="shrink-0" strokeWidth={2.5} size={13} />
 
         <span
           className={[
-            "ml-[4px] translate-y-[-0.5px]",
-            "text-[7px] leading-none transition",
+            "ml-1 leading-none transition",
             reviewDisabled
-              ? "text-[#DDDDD8]"
+              ? "text-slate-300"
               : downActive
-                ? "text-[#990000]"
-                : "text-[#5B696E] group-hover:text-[#CC2222]",
+                ? "text-rose-700"
+                : "text-slate-500 group-hover:text-rose-700",
           ].join(" ")}
         >
           {downCounter}
         </span>
       </button>
-
-
     </div>
-  )
-  )
+  );
 
   return (
     <div
       className={[
-        "rounded-[3px]",
+        "min-w-[220px] overflow-hidden rounded-xl border bg-white shadow-sm transition",
         isCreator || ownerCreated || ownerUpped
-          ? "border border-[#829196] shadow-[0_0_0_1px_rgba(130,145,150,0.35),0_0_18px_rgba(91,105,110,0.50)]"
-          : "border border-[#D9E0E3] shadow-[0_8px_22px_rgba(15,23,42,0.09)]",
-        selected && "outline-dashed outline-2 outline-offset-2 outline-[#5B696E]",
-      ].filter(Boolean).join(" ")}
+          ? "border-slate-300 shadow-[0_0_0_1px_rgba(148,163,184,0.22),0_10px_28px_rgba(15,23,42,0.10)]"
+          : "border-slate-200",
+        selected && "ring-2 ring-slate-400 ring-offset-2",
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       {topHandleElm}
 
       {/* Top Row - Creator & Delete Btn */}
-      <div
-        className="
-          bg-[#7B8794]
-          rounded-t-[2px]
-          w-full pl-[10px] pr-[2px] 
-          flex items-center justify-between gap-2
-        "
-      >
+      <div className="flex h-8 w-full items-center justify-between gap-2 border-b border-slate-100 bg-slate-50 px-3">
         {creatorElm}
         {deleteBtnElm}
       </div>
 
       {/* Middle Row - Node Label */}
-      <div className="bg-white px-[16px]">
-        {labelElm}
-      </div>
+      <div className="bg-white px-4 py-3">{labelElm}</div>
 
-      {/* Bottom Row - Node Acceptance Status & Review Actions*/}
-      {pillElm && reviewBtnsElm && <div
-        className=" 
-          rounded-b-[2px]
-          min-w-[180px] 
-          flex items-center w-full bg-[#F5F7FA] 
-          justify-between h-[20px] px-[6px]   
-        "
-      >
-        {pillElm}
-        {reviewBtnsElm}
-      </div>}
+      {/* Bottom Row - Node Acceptance Status & Review Actions */}
+      {(pillElm || reviewBtnsElm) && (
+        <div className="flex min-h-11 w-full items-center justify-between gap-3 border-t border-slate-100 bg-slate-50 px-3 py-2">
+          {pillElm}
+          {reviewBtnsElm}
+        </div>
+      )}
 
       {bottomHandleElm}
-    </div >
+    </div>
   );
 }

@@ -34,6 +34,8 @@ function getPerformanceTone(value) {
     return {
       bar: "bg-emerald-500",
       text: "text-emerald-700",
+      bg: "bg-emerald-50",
+      ring: "ring-emerald-200",
     };
   }
 
@@ -41,12 +43,16 @@ function getPerformanceTone(value) {
     return {
       bar: "bg-amber-500",
       text: "text-amber-700",
+      bg: "bg-amber-50",
+      ring: "ring-amber-200",
     };
   }
 
   return {
-    bar: "bg-red-500",
-    text: "text-red-700",
+    bar: "bg-rose-500",
+    text: "text-rose-700",
+    bg: "bg-rose-50",
+    ring: "ring-rose-200",
   };
 }
 
@@ -68,8 +74,8 @@ function getTrustTone(value) {
   }
 
   return {
-    bar: "bg-red-500",
-    text: "text-red-700",
+    bar: "bg-rose-500",
+    text: "text-rose-700",
   };
 }
 
@@ -78,15 +84,23 @@ function PerformanceBar({ value }) {
   const tone = getPerformanceTone(num);
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200">
         <div
-          className={["h-full rounded-full transition-[width] duration-300", tone.bar].join(" ")}
-          style={{ width: `${Math.min(100, num)}%` }}
+          className={[
+            "h-full rounded-full transition-[width] duration-300",
+            tone.bar,
+          ].join(" ")}
+          style={{ width: `${Math.min(100, Math.max(0, num))}%` }}
         />
       </div>
 
-      <span className={["w-9 shrink-0 text-right text-[10px] font-semibold", tone.text].join(" ")}>
+      <span
+        className={[
+          "w-10 shrink-0 text-right text-[11px] font-semibold",
+          tone.text,
+        ].join(" ")}
+      >
         {num.toFixed(1)}%
       </span>
     </div>
@@ -95,19 +109,27 @@ function PerformanceBar({ value }) {
 
 function TrustBar({ value }) {
   const num = parseFloat(value) || 0;
-  const pct = Math.min(100, (num / 2) * 100);
+  const pct = Math.min(100, Math.max(0, (num / 2) * 100));
   const tone = getTrustTone(num);
 
   return (
-    <div className="flex items-center gap-1.5">
+    <div className="flex items-center gap-2">
       <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-slate-200">
         <div
-          className={["h-full rounded-full transition-[width] duration-300", tone.bar].join(" ")}
+          className={[
+            "h-full rounded-full transition-[width] duration-300",
+            tone.bar,
+          ].join(" ")}
           style={{ width: `${pct}%` }}
         />
       </div>
 
-      <span className={["w-8 shrink-0 text-right text-[10px] font-semibold", tone.text].join(" ")}>
+      <span
+        className={[
+          "w-9 shrink-0 text-right text-[11px] font-semibold",
+          tone.text,
+        ].join(" ")}
+      >
         {num.toFixed(2)}
       </span>
     </div>
@@ -117,10 +139,38 @@ function TrustBar({ value }) {
 function MetricBlock({ label, children }) {
   return (
     <div>
-      <div className="mb-1 text-[10px] font-medium text-slate-500">
+      <div className="mb-1 text-[11px] font-medium text-slate-500">
         {label}
       </div>
+
       {children}
+    </div>
+  );
+}
+
+function ScoreTag({ children }) {
+  return (
+    <span className="inline-flex h-5 max-w-full items-center rounded-full bg-slate-100 px-2 text-[11px] font-semibold text-slate-600 ring-1 ring-inset ring-slate-200">
+      {children}
+    </span>
+  );
+}
+
+function ScoreDetailRow({ label, value, tone = "slate" }) {
+  const valueClass =
+    tone === "positive"
+      ? "text-emerald-700"
+      : tone === "negative"
+        ? "text-rose-700"
+        : "text-slate-700";
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] text-slate-600">
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+
+      <span className={["shrink-0 font-semibold", valueClass].join(" ")}>
+        {value}
+      </span>
     </div>
   );
 }
@@ -128,28 +178,55 @@ function MetricBlock({ label, children }) {
 function GuestRow({ score }) {
   const [expanded, setExpanded] = useState(false);
 
+  const performanceTone = getPerformanceTone(score.performancePct);
+
   return (
-    <article className="overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+    <article className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
       <button
         type="button"
         onClick={() => setExpanded((value) => !value)}
-        className="block w-full px-2.5 py-2 text-left hover:bg-slate-50"
+        className="block w-full p-3 text-left transition hover:bg-slate-50"
       >
-        <div className="mb-2 flex min-w-0 items-center gap-2">
-          <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-800">
-            {score.guestName}
-          </span>
+        <div className="flex min-w-0 items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="min-w-0 flex-1 truncate text-sm font-semibold text-slate-950">
+                {score.guestName}
+              </span>
+
+              <span
+                className={[
+                  "inline-flex h-6 shrink-0 items-center rounded-full px-2 text-[11px] font-semibold ring-1 ring-inset",
+                  performanceTone.bg,
+                  performanceTone.text,
+                  performanceTone.ring,
+                ].join(" ")}
+              >
+                {parseFloat(score.performancePct || 0).toFixed(1)}%
+              </span>
+            </div>
+
+            {score.tags?.length > 0 && (
+              <div className="mt-2 flex min-w-0 flex-wrap gap-1.5">
+                {score.tags.map((tag) => (
+                  <ScoreTag key={tag}>
+                    {PERSONALITY_LABELS[tag] ?? tag}
+                  </ScoreTag>
+                ))}
+              </div>
+            )}
+          </div>
 
           <ChevronDown
-            size={14}
+            size={16}
             className={[
-              "shrink-0 text-slate-400 transition-transform duration-200",
+              "mt-0.5 shrink-0 text-slate-400 transition-transform duration-200",
               expanded ? "rotate-180" : "",
             ].join(" ")}
           />
         </div>
 
-        <div className="space-y-1.5">
+        <div className="mt-3 grid gap-2">
           <MetricBlock label="Performance">
             <PerformanceBar value={score.performancePct} />
           </MetricBlock>
@@ -158,42 +235,24 @@ function GuestRow({ score }) {
             <TrustBar value={score.trustFactor} />
           </MetricBlock>
         </div>
-
-        {score.tags?.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1">
-            {score.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full bg-slate-100 px-1.5 py-0.5 text-[9px] font-medium text-slate-600"
-              >
-                {PERSONALITY_LABELS[tag] ?? tag}
-              </span>
-            ))}
-          </div>
-        )}
       </button>
 
       {expanded && (
-        <div className="space-y-2 border-t border-slate-100 bg-slate-50 px-2.5 py-2">
+        <div className="space-y-3 border-t border-slate-100 bg-slate-50 p-3">
           {score.rewards?.length > 0 && (
             <section>
-              <h4 className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-emerald-700">
+              <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-emerald-700">
                 Rewards
               </h4>
 
-              <div className="space-y-0.5">
+              <div className="space-y-1.5">
                 {score.rewards.map((reward, index) => (
-                  <div
+                  <ScoreDetailRow
                     key={index}
-                    className="flex gap-2 text-[10px] text-slate-600"
-                  >
-                    <span className="min-w-0 flex-1 truncate">
-                      {REASON_LABELS[reward.reason] ?? reward.reason} ×{reward.count}
-                    </span>
-                    <span className="shrink-0 font-semibold text-emerald-700">
-                      +{reward.points.toFixed(1)}
-                    </span>
-                  </div>
+                    label={`${REASON_LABELS[reward.reason] ?? reward.reason} ×${reward.count}`}
+                    value={`+${reward.points.toFixed(1)}`}
+                    tone="positive"
+                  />
                 ))}
               </div>
             </section>
@@ -201,44 +260,58 @@ function GuestRow({ score }) {
 
           {score.penalties?.length > 0 && (
             <section>
-              <h4 className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-red-700">
+              <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-rose-700">
                 Penalties
               </h4>
 
-              <div className="space-y-0.5">
+              <div className="space-y-1.5">
                 {score.penalties.map((penalty, index) => (
-                  <div
+                  <ScoreDetailRow
                     key={index}
-                    className="flex gap-2 text-[10px] text-slate-600"
-                  >
-                    <span className="min-w-0 flex-1 truncate">
-                      {REASON_LABELS[penalty.reason] ?? penalty.reason} ×{penalty.count}
-                    </span>
-                    <span className="shrink-0 font-semibold text-red-700">
-                      -{penalty.points.toFixed(1)}
-                    </span>
-                  </div>
+                    label={`${REASON_LABELS[penalty.reason] ?? penalty.reason} ×${penalty.count}`}
+                    value={`-${penalty.points.toFixed(1)}`}
+                    tone="negative"
+                  />
                 ))}
               </div>
             </section>
           )}
 
-          <section className="text-[10px] leading-4 text-slate-500">
-            <h4 className="mb-1 font-semibold uppercase tracking-wide text-slate-600">
+          <section>
+            <h4 className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500">
               Details
             </h4>
 
-            <div>
-              Concepts: {score.nodesCreated} created ({score.nodesCreatedAccepted}✓ {score.nodesCreatedRejected}✗)
-            </div>
-            <div>
-              Links: {score.edgesCreated} created ({score.edgesCreatedAccepted}✓ {score.edgesCreatedRejected}✗)
-            </div>
-            <div>
-              Agreements: {score.nodesAgreed} concepts, {score.edgesAgreed} links
-            </div>
-            <div>
-              Undecided: {score.nodesUndecided + score.edgesUndecided}
+            <div className="space-y-1.5">
+              <ScoreDetailRow
+                label="Concepts"
+                value={`${score.nodesCreated} created`}
+              />
+
+              <ScoreDetailRow
+                label="Concept validation"
+                value={`${score.nodesCreatedAccepted}✓ ${score.nodesCreatedRejected}✗`}
+              />
+
+              <ScoreDetailRow
+                label="Links"
+                value={`${score.edgesCreated} created`}
+              />
+
+              <ScoreDetailRow
+                label="Link validation"
+                value={`${score.edgesCreatedAccepted}✓ ${score.edgesCreatedRejected}✗`}
+              />
+
+              <ScoreDetailRow
+                label="Agreements"
+                value={`${score.nodesAgreed} concepts, ${score.edgesAgreed} links`}
+              />
+
+              <ScoreDetailRow
+                label="Undecided"
+                value={score.nodesUndecided + score.edgesUndecided}
+              />
             </div>
           </section>
         </div>
@@ -263,8 +336,17 @@ export default function QuickScorePanel({ events, members, projectOwnerId }) {
     return (
       <section className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
         <div className="flex min-h-0 flex-1 items-center justify-center bg-slate-50 p-3">
-          <div className="rounded-md border border-dashed border-slate-200 bg-white px-3 py-4 text-center text-xs text-slate-500">
-            No scoring data yet.
+          <div className="flex min-h-[120px] w-full items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white px-4 py-6 text-center">
+            <div>
+              <p className="text-sm font-semibold text-slate-700">
+                No scoring data yet
+              </p>
+
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Scores will appear after students create, approve or reject
+                concepts and links.
+              </p>
+            </div>
           </div>
         </div>
       </section>
@@ -273,8 +355,8 @@ export default function QuickScorePanel({ events, members, projectOwnerId }) {
 
   return (
     <section className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-white">
-      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 px-2 py-2">
-        <div className="space-y-1.5">
+      <div className="min-h-0 flex-1 overflow-y-auto bg-slate-50 p-3">
+        <div className="space-y-2">
           {scores.map((score) => (
             <GuestRow key={score.guestId} score={score} />
           ))}

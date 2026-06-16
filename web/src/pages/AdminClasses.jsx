@@ -1,5 +1,5 @@
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   adminOverviewApi,
   listProgramsApi,
@@ -11,140 +11,559 @@ import {
   deleteClassAdminApi,
   listSchoolYearsAdminApi,
 } from "../api/admin";
-import {
-  Loader2,
-  Plus,
-  Trash2,
-  GraduationCap,
-  Clock,
-  DoorOpen,
-  MoreHorizontal,
-  BookOpen,
-  UserCheck,
-  CalendarDays,
-} from "lucide-react";
 
-/* shadcn */
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+function PlusIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
-const ALL = "__all__";
-const NONE = "__none__";
+function TrashIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function BookIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75M4 19.5A2.5 2.5 0 0 0 6.5 22H20"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ClockIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function DoorIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M4 21h16M6 21V4.5A1.5 1.5 0 0 1 7.5 3H18v18M10 12h.01"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function UserIcon({ className = "" }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
+      <path
+        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function pad2(value) {
+  return String(value).padStart(2, "0");
+}
+
+function formatTime(value) {
+  if (!value) return "-";
+
+  const time = String(value);
+
+  if (/^\d{1,2}:\d{2}/.test(time)) {
+    const [hours, minutes] = time.split(":").map(Number);
+
+    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+      return "-";
+    }
+
+    return `${pad2(hours)}:${pad2(minutes)}`;
+  }
+
+  return time;
+}
+
+function getTeacherId(teacher) {
+  return teacher.user_id ?? teacher.id;
+}
+
+function getTeacherLabel(teacher) {
+  return teacher.email ?? teacher.name ?? "Teacher";
+}
+
+function getProgramName(program) {
+  return program.name ?? "Untitled program";
+}
+
+function getSubjectName(subject) {
+  return subject.name ?? "Untitled subject";
+}
+
+function getClassroomName(classroom) {
+  return classroom.name ?? "Untitled classroom";
+}
+
+function getSchoolYearName(year) {
+  return year.name ?? `${year.start_date ?? ""} - ${year.end_date ?? ""}`;
+}
+
+function getPeriodLabel(period) {
+  return `${formatTime(period.start_time)} - ${formatTime(period.end_time)}`;
+}
+
+function ClassCard({ classItem, isBusy, onDelete }) {
+  return (
+    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/70">
+      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-sm font-semibold text-slate-900">
+              {classItem.name}
+            </h2>
+
+            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
+              Class
+            </span>
+          </div>
+
+          <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500">
+            <BookIcon className="h-3.5 w-3.5 shrink-0" />
+            {classItem.subject_name || "No subject"}
+            {classItem.program_name ? ` · ${classItem.program_name}` : ""}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={isBusy}
+          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <TrashIcon className="h-4 w-4" />
+          Delete
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+          <UserIcon className="h-3.5 w-3.5" />
+          {classItem.teacher_email || "-"}
+        </span>
+
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+          <DoorIcon className="h-3.5 w-3.5" />
+          {classItem.classroom_name || "-"}
+        </span>
+
+        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
+          <ClockIcon className="h-3.5 w-3.5" />
+          {classItem.start_period_id ? "Start set" : "No start"} /{" "}
+          {classItem.end_period_id ? "End set" : "No end"}
+        </span>
+      </div>
+    </article>
+  );
+}
+
+function ClassModal({
+  isOpen,
+  programs,
+  subjects,
+  teachers,
+  classrooms,
+  years,
+  periods,
+  programId,
+  yearId,
+  formValue,
+  isSaving = false,
+  isSubjectsLoading = false,
+  isPeriodsLoading = false,
+  canCreate = false,
+  onClose,
+  onProgramChange,
+  onYearChange,
+  onFormChange,
+  onSave,
+}) {
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setError("");
+  }, [isOpen]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !isSaving) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, isSaving, onClose]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleSave = async () => {
+    if (!formValue.subject_id) {
+      setError("Select a subject.");
+      return;
+    }
+
+    if (!formValue.teacher_id) {
+      setError("Select a teacher.");
+      return;
+    }
+
+    if (!formValue.name.trim()) {
+      setError("Add a class name.");
+      return;
+    }
+
+    try {
+      await onSave?.();
+      onClose?.();
+    } catch {
+      setError("Could not create this class.");
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Class form"
+      onMouseDown={() => {
+        if (!isSaving) {
+          onClose?.();
+        }
+      }}
+    >
+      <div
+        className="grid max-h-[90vh] w-full max-w-3xl grid-rows-[auto_minmax(0,1fr)_auto] overflow-hidden rounded-2xl bg-white shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="border-b border-slate-100 p-5">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-900">
+                Create class
+              </h2>
+
+              <p className="mt-1 text-sm text-slate-500">
+                Assign a subject to a teacher and optionally connect the class to a classroom and periods.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+              aria-label="Close modal"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+
+        <div className="min-h-0 overflow-y-auto p-5 [scrollbar-gutter:stable]">
+          <div className="grid gap-5">
+            <section className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Required setup
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Program
+                  </label>
+
+                  <select
+                    value={programId}
+                    onChange={(event) => onProgramChange(event.target.value)}
+                    disabled={isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">Select program</option>
+
+                    {programs.map((program) => (
+                      <option key={program.id} value={program.id}>
+                        {getProgramName(program)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Subject
+                  </label>
+
+                  <select
+                    value={formValue.subject_id}
+                    onChange={(event) =>
+                      onFormChange("subject_id", event.target.value)
+                    }
+                    disabled={!programId || isSubjectsLoading || isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {!programId ? "Select program first" : "Select subject"}
+                    </option>
+
+                    {subjects.map((subject) => (
+                      <option key={subject.id} value={subject.id}>
+                        {getSubjectName(subject)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {isSubjectsLoading && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Loading subjects...
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Teacher
+                  </label>
+
+                  <select
+                    value={formValue.teacher_id}
+                    onChange={(event) =>
+                      onFormChange("teacher_id", event.target.value)
+                    }
+                    disabled={isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">Select teacher</option>
+
+                    {teachers.map((teacher) => (
+                      <option key={getTeacherId(teacher)} value={getTeacherId(teacher)}>
+                        {getTeacherLabel(teacher)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Class name
+                  </label>
+
+                  <input
+                    value={formValue.name}
+                    onChange={(event) => onFormChange("name", event.target.value)}
+                    disabled={isSaving}
+                    placeholder="e.g. Math 10A"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4">
+              <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-slate-400">
+                Optional scheduling
+              </p>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Classroom
+                  </label>
+
+                  <select
+                    value={formValue.classroom_id}
+                    onChange={(event) =>
+                      onFormChange("classroom_id", event.target.value)
+                    }
+                    disabled={isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">No classroom</option>
+
+                    {classrooms.map((classroom) => (
+                      <option key={classroom.id} value={classroom.id}>
+                        {getClassroomName(classroom)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Year for periods
+                  </label>
+
+                  <select
+                    value={yearId}
+                    onChange={(event) => onYearChange(event.target.value)}
+                    disabled={isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">No periods</option>
+
+                    {years.map((year) => (
+                      <option key={year.id} value={year.id}>
+                        {getSchoolYearName(year)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    Start period
+                  </label>
+
+                  <select
+                    value={formValue.start_period_id}
+                    onChange={(event) =>
+                      onFormChange("start_period_id", event.target.value)
+                    }
+                    disabled={!yearId || isPeriodsLoading || isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {!yearId ? "Select year first" : "No start period"}
+                    </option>
+
+                    {periods.map((period) => (
+                      <option key={period.id} value={period.id}>
+                        {getPeriodLabel(period)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                    End period
+                  </label>
+
+                  <select
+                    value={formValue.end_period_id}
+                    onChange={(event) =>
+                      onFormChange("end_period_id", event.target.value)
+                    }
+                    disabled={!yearId || isPeriodsLoading || isSaving}
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                  >
+                    <option value="">
+                      {!yearId ? "Select year first" : "No end period"}
+                    </option>
+
+                    {periods.map((period) => (
+                      <option key={period.id} value={period.id}>
+                        {getPeriodLabel(period)}
+                      </option>
+                    ))}
+                  </select>
+
+                  {isPeriodsLoading && (
+                    <p className="mt-1 text-xs text-slate-500">
+                      Loading periods...
+                    </p>
+                  )}
+                </div>
+              </div>
+            </section>
+
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {error}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 border-t border-slate-100 bg-slate-50 p-4">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={!canCreate || isSaving}
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {isSaving ? "Creating..." : "Create"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminClasses() {
-  const qc = useQueryClient();
+  const queryClient = useQueryClient();
 
-  const ovQ = useQuery({
-    queryKey: ["adminOverview"],
-    queryFn: adminOverviewApi,
-    retry: false,
-  });
+  const [createOpen, setCreateOpen] = useState(false);
+  const [programId, setProgramId] = useState("");
+  const [yearId, setYearId] = useState("");
 
-  const programsQ = useQuery({
-    queryKey: ["programs", { sort: "name", dir: "asc" }],
-    queryFn: () => listProgramsApi({ sort: "name", dir: "asc" }),
-    retry: false,
-  });
-
-  const classroomsQ = useQuery({
-    queryKey: ["classrooms"],
-    queryFn: listClassroomsAdminApi,
-    retry: false,
-  });
-
-  const yearsQ = useQuery({
-    queryKey: ["schoolYears"],
-    queryFn: listSchoolYearsAdminApi,
-    retry: false,
-  });
-
-  const classesQ = useQuery({
-    queryKey: ["classes-admin"],
-    queryFn: listClassesAdminApi,
-    retry: false,
-  });
-
-  const createM = useMutation({
-    mutationFn: createClassAdminApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["classes-admin"] }),
-  });
-
-  const deleteM = useMutation({
-    mutationFn: deleteClassAdminApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["classes-admin"] }),
-  });
-
-  const teachers = React.useMemo(
-    () =>
-      (ovQ.data?.teachers || []).map((t) => ({
-        id: t.user_id,
-        email: t.email,
-        school_id: t.school_id,
-      })),
-    [ovQ.data]
-  );
-
-  const programs = programsQ.data || [];
-  const classrooms = classroomsQ.data || [];
-  const years = yearsQ.data || [];
-  const classes = classesQ.data || [];
-
-  const [createOpen, setCreateOpen] = React.useState(false);
-
-  const [programId, setProgramId] = React.useState("");
-  const [yearId, setYearId] = React.useState("");
-
-  const subjectsQ = useQuery({
-    queryKey: ["subjects-admin", { program: programId }],
-    queryFn: () =>
-      listSubjectsAdminApi({
-        program: programId || undefined,
-        sort: "name",
-        dir: "asc",
-      }),
-    enabled: !!programId,
-    retry: false,
-  });
-
-  const periodsQ = useQuery({
-    queryKey: ["periods", { school_year_id: yearId }],
-    queryFn: () =>
-      listPeriodsAdminApi({
-        school_year_id: yearId || undefined,
-      }),
-    enabled: !!yearId,
-    retry: false,
-  });
-
-  const subjects = subjectsQ.data || [];
-  const periods = periodsQ.data || [];
-
-  const [f, setF] = React.useState({
+  const [formValue, setFormValue] = useState({
     subject_id: "",
     teacher_id: "",
     name: "",
@@ -153,26 +572,120 @@ export default function AdminClasses() {
     end_period_id: "",
   });
 
-  React.useEffect(() => {
-    setF((s) => ({
-      ...s,
+  const overviewQuery = useQuery({
+    queryKey: ["adminOverview"],
+    queryFn: adminOverviewApi,
+    retry: false,
+  });
+
+  const programsQuery = useQuery({
+    queryKey: ["programs", { sort: "name", dir: "asc" }],
+    queryFn: () => listProgramsApi({ sort: "name", dir: "asc" }),
+    retry: false,
+  });
+
+  const classroomsQuery = useQuery({
+    queryKey: ["classrooms"],
+    queryFn: listClassroomsAdminApi,
+    retry: false,
+  });
+
+  const yearsQuery = useQuery({
+    queryKey: ["schoolYears"],
+    queryFn: listSchoolYearsAdminApi,
+    retry: false,
+  });
+
+  const classesQuery = useQuery({
+    queryKey: ["classes-admin"],
+    queryFn: listClassesAdminApi,
+    retry: false,
+  });
+
+  const subjectsQuery = useQuery({
+    queryKey: ["subjects-admin", { program: programId }],
+    queryFn: () =>
+      listSubjectsAdminApi({
+        program: programId || undefined,
+        sort: "name",
+        dir: "asc",
+      }),
+    enabled: Boolean(programId),
+    retry: false,
+  });
+
+  const periodsQuery = useQuery({
+    queryKey: ["periods", { school_year_id: yearId }],
+    queryFn: () =>
+      listPeriodsAdminApi({
+        school_year_id: yearId || undefined,
+      }),
+    enabled: Boolean(yearId),
+    retry: false,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: createClassAdminApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes-admin"] });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteClassAdminApi,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["classes-admin"] });
+    },
+  });
+
+  const teachers = useMemo(() => {
+    return overviewQuery.data?.teachers ?? [];
+  }, [overviewQuery.data]);
+
+  const programs = programsQuery.data ?? [];
+  const classrooms = classroomsQuery.data ?? [];
+  const years = yearsQuery.data ?? [];
+  const classes = classesQuery.data ?? [];
+  const subjects = subjectsQuery.data ?? [];
+  const periods = periodsQuery.data ?? [];
+
+  const isLoading =
+    overviewQuery.isLoading ||
+    programsQuery.isLoading ||
+    classroomsQuery.isLoading ||
+    yearsQuery.isLoading ||
+    classesQuery.isLoading;
+
+  const isError =
+    overviewQuery.isError ||
+    programsQuery.isError ||
+    classroomsQuery.isError ||
+    yearsQuery.isError ||
+    classesQuery.isError;
+
+  const isBusy = createMutation.isPending || deleteMutation.isPending;
+  const canCreate =
+    Boolean(formValue.subject_id) &&
+    Boolean(formValue.teacher_id) &&
+    Boolean(formValue.name.trim());
+
+  useEffect(() => {
+    setFormValue((currentValue) => ({
+      ...currentValue,
       subject_id: "",
     }));
   }, [programId]);
 
-  React.useEffect(() => {
-    setF((s) => ({
-      ...s,
+  useEffect(() => {
+    setFormValue((currentValue) => ({
+      ...currentValue,
       start_period_id: "",
       end_period_id: "",
     }));
   }, [yearId]);
 
-  const isBusy = createM.isPending || deleteM.isPending;
-  const canCreate = !!f.subject_id && !!f.teacher_id && !!f.name.trim();
-
   const resetCreate = () => {
-    setF({
+    setFormValue({
       subject_id: "",
       teacher_id: "",
       name: "",
@@ -180,672 +693,193 @@ export default function AdminClasses() {
       start_period_id: "",
       end_period_id: "",
     });
+
     setProgramId("");
     setYearId("");
   };
 
-  const formatTime = (value) => {
-    if (!value) return "-";
+  const handleOpenCreate = () => {
+    setCreateOpen(true);
+  };
 
-    const time = String(value);
+  const handleCloseCreate = () => {
+    setCreateOpen(false);
+    resetCreate();
+  };
 
-    if (/^\d{2}:\d{2}/.test(time)) {
-      return time.slice(0, 5);
+  const handleFormChange = (field, value) => {
+    setFormValue((currentValue) => ({
+      ...currentValue,
+      [field]: value,
+    }));
+  };
+
+  const handleCreateClass = async () => {
+    if (!canCreate) {
+      throw new Error("Missing required fields.");
     }
 
-    return time;
+    await createMutation.mutateAsync({
+      subject_id: formValue.subject_id,
+      teacher_id: formValue.teacher_id,
+      name: formValue.name.trim(),
+      classroom_id: formValue.classroom_id || undefined,
+      start_period_id: formValue.start_period_id || undefined,
+      end_period_id: formValue.end_period_id || undefined,
+    });
+
+    resetCreate();
   };
 
-  const getPeriodLabel = (periodId) => {
-    if (!periodId) return "-";
-
-    const period = periods.find((p) => p.id === periodId);
-
-    if (!period) return "Set";
-
-    return `${formatTime(period.start_time)} - ${formatTime(period.end_time)}`;
-  };
-
-  const onCreate = () => {
-    if (!canCreate) return;
-
-    createM.mutate(
-      {
-        subject_id: f.subject_id,
-        teacher_id: f.teacher_id,
-        name: f.name.trim(),
-        classroom_id: f.classroom_id || undefined,
-        start_period_id: f.start_period_id || undefined,
-        end_period_id: f.end_period_id || undefined,
-      },
-      {
-        onSuccess: () => {
-          setCreateOpen(false);
-          resetCreate();
-        },
-      }
-    );
-  };
-
-  const onDeleteClass = (classItem) => {
-    if (!confirm(`Delete class "${classItem.name}"?`)) return;
-
-    deleteM.mutate(classItem.id);
-  };
-
-  const getStableIndex = (value, max) => {
-    const str = String(value || "");
-    let hash = 0;
-
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
+  const handleDeleteClass = async (classItem) => {
+    if (!window.confirm(`Delete class "${classItem.name}"?`)) {
+      return;
     }
 
-    return hash % max;
+    await deleteMutation.mutateAsync(classItem.id);
   };
 
-  const classAccents = [
-    {
-      bg: "bg-emerald-50",
-      border: "border-emerald-200",
-      text: "text-emerald-700",
-    },
-    {
-      bg: "bg-sky-50",
-      border: "border-sky-200",
-      text: "text-sky-700",
-    },
-    {
-      bg: "bg-violet-50",
-      border: "border-violet-200",
-      text: "text-violet-700",
-    },
-    {
-      bg: "bg-amber-50",
-      border: "border-amber-200",
-      text: "text-amber-700",
-    },
-    {
-      bg: "bg-rose-50",
-      border: "border-rose-200",
-      text: "text-rose-700",
-    },
-  ];
-
-  if (
-    ovQ.isLoading ||
-    programsQ.isLoading ||
-    classroomsQ.isLoading ||
-    yearsQ.isLoading ||
-    classesQ.isLoading
-  ) {
+  if (isLoading) {
     return (
-      <div className="flex min-h-[220px] items-center rounded-md border border-slate-200 bg-white p-6 text-sm text-slate-500 shadow-sm">
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        Loading classes...
-      </div>
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-slate-500">Loading classes...</p>
+        </section>
+      </main>
     );
   }
 
-  if (
-    ovQ.isError ||
-    programsQ.isError ||
-    classroomsQ.isError ||
-    yearsQ.isError ||
-    classesQ.isError
-  ) {
+  if (isError) {
     return (
-      <div className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-        Error loading classes.
-      </div>
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-red-600">Error loading classes.</p>
+        </section>
+      </main>
     );
   }
 
   return (
-    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto overflow-x-hidden xl:h-[calc(100vh-16vh-3rem)] xl:overflow-hidden">
-      {/* Page header */}
-      <section className="grid overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:min-h-[280px] xl:grid-cols-9">
-        <div className="border-b border-slate-200 bg-slate-50 p-5 xl:col-span-3 xl:border-b-0 xl:border-r">
-          <p className="text-xl font-semibold uppercase tracking-[0.16em] text-slate-500 sm:text-2xl">
-            Classes
-          </p>
-
-          <h1 className="mt-3 text-5xl font-semibold tracking-tight text-slate-950 sm:text-6xl">
-            {classes.length}
-          </h1>
-
-          <p className="mt-2 text-sm text-slate-500">
-            Total configured classes
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-5 p-5 xl:col-span-6 xl:justify-between">
-          <div className="flex flex-col gap-5 2xl:flex-row 2xl:items-start 2xl:justify-between">
+    <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+      <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+        <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
             <div className="min-w-0">
-              <h2 className="text-lg font-semibold text-slate-950">
-                Create and manage classes
-              </h2>
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <h1 className="truncate text-base font-semibold text-slate-900">
+                  Classes
+                </h1>
 
-              <p className="mt-1 max-w-xl text-sm text-slate-500">
-                Assign subjects to teachers and optionally connect classes to a
-                classroom and scheduled periods.
+                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                  {classes.length} configured
+                </span>
+              </div>
+
+              <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
+                Assign subjects to teachers and optionally connect classes to classrooms and periods.
               </p>
             </div>
 
-            <div className="grid w-full grid-cols-2 gap-3 sm:w-auto sm:min-w-[300px]">
-              <div className="rounded-md border border-sky-200 bg-sky-50 px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase leading-none text-sky-700">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_auto_auto]">
+              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
+                <div className="text-[11px] font-semibold text-sky-700">
                   Teachers
-                </p>
-
-                <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
-                  {teachers.length}
-                </p>
-              </div>
-
-              <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
-                <p className="text-[10px] font-semibold uppercase leading-none text-emerald-700">
-                  Programs
-                </p>
-
-                <p className="mt-3 text-2xl font-semibold leading-none text-slate-950">
-                  {programs.length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Badge className="w-fit rounded-full bg-[#e4e7eb] px-3 py-1 text-[#323f4b] hover:bg-[#e4e7eb]">
-              {classes.length} total
-            </Badge>
-
-            <Dialog
-              open={createOpen}
-              onOpenChange={(open) => {
-                setCreateOpen(open);
-
-                if (!open) {
-                  resetCreate();
-                }
-              }}
-            >
-              <DialogTrigger asChild>
-                <Button className="w-full gap-2 bg-[#3e4c59] text-white hover:bg-[#616e7c] sm:w-auto">
-                  <Plus className="h-4 w-4" />
-                  Create class
-                </Button>
-              </DialogTrigger>
-
-              <DialogContent className="max-h-[90vh] overflow-hidden border-slate-200 p-0 shadow-lg sm:max-w-[760px]">
-                <DialogHeader className="border-b border-slate-200 bg-slate-50 px-6 py-5">
-                  <DialogTitle className="text-lg font-semibold text-slate-950">
-                    Create class
-                  </DialogTitle>
-
-                  <DialogDescription className="text-sm text-slate-500">
-                    Subject, teacher, and class name are required. Classroom and
-                    periods are optional.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="max-h-[calc(90vh-150px)] overflow-y-auto px-6 py-5">
-                  <div className="grid gap-5">
-                    <div className="rounded-md border border-slate-200 bg-white p-4">
-                      <p className="mb-4 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                        Required setup
-                      </p>
-
-                      <div className="grid gap-4">
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Program
-                          </Label>
-
-                          <Select
-                            value={programId || ALL}
-                            onValueChange={(v) =>
-                              setProgramId(v === ALL ? "" : v)
-                            }
-                          >
-                            <SelectTrigger className="h-10">
-                              <SelectValue placeholder="Select program" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={ALL}>
-                                Select program
-                              </SelectItem>
-
-                              {programs.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {p.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Subject
-                          </Label>
-
-                          <Select
-                            value={f.subject_id || ALL}
-                            onValueChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                subject_id: v === ALL ? "" : v,
-                              }))
-                            }
-                            disabled={!programId || subjectsQ.isLoading}
-                          >
-                            <SelectTrigger className="h-10">
-                              <SelectValue
-                                placeholder={
-                                  !programId
-                                    ? "Select program first"
-                                    : "Select subject"
-                                }
-                              />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={ALL}>
-                                Select subject
-                              </SelectItem>
-
-                              {subjects.map((s) => (
-                                <SelectItem key={s.id} value={s.id}>
-                                  {s.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {subjectsQ.isLoading && (
-                            <div className="text-xs text-slate-500">
-                              <Loader2 className="mr-2 inline-block h-3 w-3 animate-spin" />
-                              Loading subjects...
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Teacher
-                          </Label>
-
-                          <Select
-                            value={f.teacher_id || ALL}
-                            onValueChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                teacher_id: v === ALL ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="h-10">
-                              <SelectValue placeholder="Select teacher" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={ALL}>
-                                Select teacher
-                              </SelectItem>
-
-                              {teachers.map((t) => (
-                                <SelectItem key={t.id} value={t.id}>
-                                  {t.email}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Class name
-                          </Label>
-
-                          <Input
-                            placeholder="e.g. Math 10A"
-                            value={f.name}
-                            onChange={(e) =>
-                              setF((s) => ({
-                                ...s,
-                                name: e.target.value,
-                              }))
-                            }
-                            className="h-10"
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-                      <p className="mb-4 text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                        Optional scheduling
-                      </p>
-
-                      <div className="grid gap-4 sm:grid-cols-2">
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Classroom
-                          </Label>
-
-                          <Select
-                            value={f.classroom_id || NONE}
-                            onValueChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                classroom_id: v === NONE ? "" : v,
-                              }))
-                            }
-                          >
-                            <SelectTrigger className="h-10 bg-white">
-                              <SelectValue placeholder="No classroom" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={NONE}>
-                                No classroom
-                              </SelectItem>
-
-                              {classrooms.map((c) => (
-                                <SelectItem key={c.id} value={c.id}>
-                                  {c.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Year for periods
-                          </Label>
-
-                          <Select
-                            value={yearId || NONE}
-                            onValueChange={(v) =>
-                              setYearId(v === NONE ? "" : v)
-                            }
-                          >
-                            <SelectTrigger className="h-10 bg-white">
-                              <SelectValue placeholder="Pick year to enable periods" />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={NONE}>No periods</SelectItem>
-
-                              {years.map((y) => (
-                                <SelectItem key={y.id} value={y.id}>
-                                  {y.name}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            Start period
-                          </Label>
-
-                          <Select
-                            value={f.start_period_id || NONE}
-                            onValueChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                start_period_id: v === NONE ? "" : v,
-                              }))
-                            }
-                            disabled={!yearId || periodsQ.isLoading}
-                          >
-                            <SelectTrigger className="h-10 bg-white">
-                              <SelectValue
-                                placeholder={
-                                  !yearId
-                                    ? "Select year first"
-                                    : "Start period"
-                                }
-                              />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={NONE}>
-                                No start period
-                              </SelectItem>
-
-                              {periods.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {formatTime(p.start_time)} -{" "}
-                                  {formatTime(p.end_time)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="grid gap-2">
-                          <Label className="text-sm text-slate-700">
-                            End period
-                          </Label>
-
-                          <Select
-                            value={f.end_period_id || NONE}
-                            onValueChange={(v) =>
-                              setF((s) => ({
-                                ...s,
-                                end_period_id: v === NONE ? "" : v,
-                              }))
-                            }
-                            disabled={!yearId || periodsQ.isLoading}
-                          >
-                            <SelectTrigger className="h-10 bg-white">
-                              <SelectValue
-                                placeholder={
-                                  !yearId ? "Select year first" : "End period"
-                                }
-                              />
-                            </SelectTrigger>
-
-                            <SelectContent>
-                              <SelectItem value={NONE}>
-                                No end period
-                              </SelectItem>
-
-                              {periods.map((p) => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  {formatTime(p.start_time)} -{" "}
-                                  {formatTime(p.end_time)}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-
-                          {periodsQ.isLoading && (
-                            <div className="text-xs text-slate-500">
-                              <Loader2 className="mr-2 inline-block h-3 w-3 animate-spin" />
-                              Loading periods...
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
 
-                <DialogFooter className="border-t border-slate-200 bg-slate-50 px-6 py-4">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCreateOpen(false);
-                      resetCreate();
-                    }}
-                    disabled={createM.isPending}
-                  >
-                    Cancel
-                  </Button>
+                <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                  {teachers.length}
+                </div>
+              </div>
 
-                  <Button
-                    onClick={onCreate}
-                    disabled={!canCreate || createM.isPending}
-                    className="gap-2 bg-[#3e4c59] text-white hover:bg-[#616e7c]"
-                  >
-                    {createM.isPending && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )}
-                    Create class
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
+                <div className="text-[11px] font-semibold text-emerald-700">
+                  Programs
+                </div>
+
+                <div className="mt-0.5 text-sm font-semibold text-slate-900">
+                  {programs.length}
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                disabled={isBusy}
+                className="col-span-2 flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:col-span-1"
+              >
+                <PlusIcon className="h-4 w-4" />
+                Create class
+              </button>
+            </div>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* Classes list */}
-      <section className="flex min-h-[540px] flex-col overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm xl:min-h-0 xl:flex-1">
-        <div className="flex flex-col gap-4 border-b border-slate-200 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="min-w-0">
-            <h3 className="text-sm font-semibold text-slate-950">
-              Classes list
-            </h3>
+        <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm [scrollbar-gutter:stable]">
+          {classesQuery.isFetching && (
+            <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              Refreshing classes...
+            </div>
+          )}
 
-            <p className="mt-1 text-xs text-slate-500">
-              Review configured classes and remove entries that are no longer
-              needed.
-            </p>
-          </div>
-
-          <Badge className="w-fit rounded-full bg-[#e4e7eb] px-3 py-1 text-[#323f4b] hover:bg-[#e4e7eb]">
-            {classes.length} total
-          </Badge>
-        </div>
-
-        <div className="min-h-0 flex-1 overflow-y-auto p-4">
           {!classes.length && (
-            <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <p className="text-sm font-medium text-slate-900">
-                No classes yet
-              </p>
+            <div className="grid h-full min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  No classes yet
+                </p>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Create a class by assigning a subject and a teacher.
-              </p>
+                <p className="mt-1 max-w-sm text-sm text-slate-500">
+                  Create a class by assigning a subject and a teacher.
+                </p>
+
+                <button
+                  type="button"
+                  onClick={handleOpenCreate}
+                  disabled={isBusy}
+                  className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                >
+                  Create class
+                </button>
+              </div>
             </div>
           )}
 
           {!!classes.length && (
             <div className="space-y-2">
-              {classes.map((c, index) => {
-                const accent =
-                  classAccents[
-                    getStableIndex(c.id || c.name, classAccents.length)
-                  ];
-
-                return (
-                  <article
-                    key={c.id}
-                    className="grid overflow-hidden rounded-md border border-slate-200 bg-white transition hover:border-slate-300 hover:bg-slate-50/60 md:grid-cols-12"
-                  >
-                    <div
-                      className={[
-                        "flex items-center justify-center border-b px-3 py-3 md:col-span-1 md:border-b-0 md:border-r",
-                        accent.bg,
-                        accent.border,
-                      ].join(" ")}
-                    >
-                      <span
-                        className={[
-                          "text-xs font-semibold",
-                          accent.text,
-                        ].join(" ")}
-                      >
-                        {String(index + 1).padStart(2, "0")}
-                      </span>
-                    </div>
-
-                    <div className="min-w-0 px-4 py-3 md:col-span-9">
-                      <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-                        <div className="min-w-0">
-                          <div className="flex flex-wrap items-center gap-2">
-                            <h4 className="truncate text-sm font-semibold text-slate-950">
-                              {c.name}
-                            </h4>
-
-                            <Badge className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] text-sky-700 hover:bg-sky-50">
-                              Class
-                            </Badge>
-                          </div>
-
-                          <p className="mt-0.5 flex items-center gap-1 truncate text-xs text-slate-500">
-                            <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                            {c.subject_name || "No subject"}
-                            {c.program_name ? ` · ${c.program_name}` : ""}
-                          </p>
-                        </div>
-
-                        <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
-                          <span className="rounded-full bg-slate-100 px-2 py-1">
-                            Teacher:{" "}
-                            <span className="font-medium text-slate-700">
-                              {c.teacher_email || "-"}
-                            </span>
-                          </span>
-
-                          <span className="rounded-full bg-slate-100 px-2 py-1">
-                            Classroom:{" "}
-                            <span className="font-medium text-slate-700">
-                              {c.classroom_name || "-"}
-                            </span>
-                          </span>
-
-                          <span className="rounded-full bg-slate-100 px-2 py-1">
-                            Periods:{" "}
-                            <span className="font-medium text-slate-700">
-                              {c.start_period_id ? "set" : "-"} /{" "}
-                              {c.end_period_id ? "set" : "-"}
-                            </span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center justify-end border-t px-4 py-3 md:col-span-2 md:border-t-0">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            disabled={isBusy}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem
-                            className="text-destructive focus:text-destructive"
-                            onClick={() => onDeleteClass(c)}
-                            disabled={deleteM.isPending}
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-                  </article>
-                );
-              })}
+              {classes.map((classItem) => (
+                <ClassCard
+                  key={classItem.id}
+                  classItem={classItem}
+                  isBusy={isBusy}
+                  onDelete={() => handleDeleteClass(classItem)}
+                />
+              ))}
             </div>
           )}
         </div>
+
+        <ClassModal
+          isOpen={createOpen}
+          programs={programs}
+          subjects={subjects}
+          teachers={teachers}
+          classrooms={classrooms}
+          years={years}
+          periods={periods}
+          programId={programId}
+          yearId={yearId}
+          formValue={formValue}
+          isSaving={createMutation.isPending}
+          isSubjectsLoading={subjectsQuery.isLoading}
+          isPeriodsLoading={periodsQuery.isLoading}
+          canCreate={canCreate}
+          onClose={handleCloseCreate}
+          onProgramChange={setProgramId}
+          onYearChange={setYearId}
+          onFormChange={handleFormChange}
+          onSave={handleCreateClass}
+        />
       </section>
-    </div>
+    </main>
   );
 }

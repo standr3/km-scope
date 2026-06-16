@@ -34,9 +34,34 @@ export default async function initDb() {
       addr text,
       contact_email text,
       contact_phone text,
+      status text NOT NULL DEFAULT 'PENDING',
+      admin_setup_completed boolean NOT NULL DEFAULT false,
+      approved_at timestamptz NULL,
       created_at timestamptz NOT NULL DEFAULT now()
     );
+
+    ALTER TABLE schools
+      ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'PENDING',
+      ADD COLUMN IF NOT EXISTS admin_setup_completed boolean NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS approved_at timestamptz NULL;
+
     CREATE INDEX IF NOT EXISTS idx_schools_name ON schools(lower(name));
+
+    CREATE UNIQUE INDEX IF NOT EXISTS uq_schools_contact_email_lower
+      ON schools (lower(contact_email))
+      WHERE contact_email IS NOT NULL;
+
+    DO $$
+    BEGIN
+      IF NOT EXISTS (
+        SELECT 1 FROM information_schema.check_constraints
+        WHERE constraint_name = 'schools_status_check'
+      ) THEN
+        ALTER TABLE schools
+          ADD CONSTRAINT schools_status_check
+          CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED'));
+      END IF;
+    END $$;
 
     -- memberships
     CREATE TABLE IF NOT EXISTS memberships (
@@ -70,6 +95,8 @@ export default async function initDb() {
       created_at timestamptz NOT NULL DEFAULT now(),
       UNIQUE (school_id, user_id)
     );
+
+    
     DO $$
     BEGIN
       IF NOT EXISTS (
@@ -81,6 +108,64 @@ export default async function initDb() {
       END IF;
     END $$;
     CREATE INDEX IF NOT EXISTS idx_member_req_school ON member_req(school_id, accepted);
+
+
+
+-- member invitations
+CREATE TABLE IF NOT EXISTS member_invites (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  school_id uuid NOT NULL REFERENCES schools(id) ON DELETE CASCADE,
+  email text NOT NULL,
+  user_role text NOT NULL,
+  status text NOT NULL DEFAULT 'PENDING',
+  invited_by uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  used_by uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  used_at timestamptz NULL,
+  revoked_at timestamptz NULL,
+  expires_at timestamptz NULL,
+  UNIQUE (school_id, email)
+);
+
+ALTER TABLE member_invites
+  ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'PENDING',
+  ADD COLUMN IF NOT EXISTS used_by uuid NULL REFERENCES users(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS used_at timestamptz NULL,
+  ADD COLUMN IF NOT EXISTS revoked_at timestamptz NULL,
+  ADD COLUMN IF NOT EXISTS expires_at timestamptz NULL;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'member_invites_role_check'
+  ) THEN
+    ALTER TABLE member_invites
+      ADD CONSTRAINT member_invites_role_check
+      CHECK (user_role IN ('teacher','student'));
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.check_constraints
+    WHERE constraint_name = 'member_invites_status_check'
+  ) THEN
+    ALTER TABLE member_invites
+      ADD CONSTRAINT member_invites_status_check
+      CHECK (status IN ('PENDING','USED','REVOKED','EXPIRED'));
+  END IF;
+END $$;
+
+CREATE INDEX IF NOT EXISTS idx_member_invites_school_status
+  ON member_invites(school_id, status);
+
+CREATE INDEX IF NOT EXISTS idx_member_invites_email
+  ON member_invites(lower(email));
+
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_member_invites_school_lower_email
+  ON member_invites (school_id, lower(email));
 
     -- programs
     CREATE TABLE IF NOT EXISTS programs (
@@ -498,6 +583,7 @@ CREATE INDEX IF NOT EXISTS idx_classrooms_school
   label text NULL,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
 CREATE INDEX IF NOT EXISTS idx_perf_sessions_project
   ON performance_sessions(project_id, created_at DESC);
 
@@ -536,6 +622,10 @@ CREATE TABLE IF NOT EXISTS session_scores (
 );
 CREATE INDEX IF NOT EXISTS idx_session_scores_session ON session_scores(session_id);
 CREATE INDEX IF NOT EXISTS idx_session_scores_user ON session_scores(user_id);
+
+
+
+
   `;
 
   const c = await pool.connect();

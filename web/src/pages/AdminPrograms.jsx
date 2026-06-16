@@ -1,5 +1,6 @@
-import React from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import React, { useEffect, useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   adminOverviewApi,
   listProgramsApi,
@@ -7,540 +8,661 @@ import {
   updateProgramApi,
   deleteProgramApi,
 } from "../api/admin";
-import { useNavigate, useSearchParams } from "react-router-dom";
-import {
-  ArrowUpDown,
-  Loader2,
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  MoreHorizontal,
-  BookOpen,
-  Network,
-} from "lucide-react";
 
-/* shadcn */
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+function ChevronDownIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="m6 9 6 6 6-6"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function PlusIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M12 5v14M5 12h14"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function EditIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="m4 20 4.5-1 10-10a2.12 2.12 0 0 0-3-3l-10 10L4 20ZM13.5 6.5l3 3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function TrashIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function ExternalIcon({ className = "" }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden="true"
+      className={className}
+    >
+      <path
+        d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+function getProgramId(program) {
+  return String(program.id);
+}
+
+function getProgramName(program) {
+  return program.name ?? program.title ?? "Untitled program";
+}
+
+function getProgramDescription(program) {
+  return program.descr ?? program.description ?? "";
+}
+
+function ProgramAccordion({
+  program,
+  isExpanded,
+  isBusy,
+  onToggle,
+  onEdit,
+  onDelete,
+  onViewSubjects,
+}) {
+  const programName = getProgramName(program);
+  const programDescription = getProgramDescription(program);
+
+  return (
+    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
+      >
+        <div className="min-w-0">
+          <h2 className="truncate text-sm font-semibold text-slate-900">
+            {programName}
+          </h2>
+        </div>
+
+        <ChevronDownIcon
+          className={[
+            "h-4 w-4 shrink-0 text-slate-400 transition-transform",
+            isExpanded ? "rotate-180" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+        />
+      </button>
+
+      {isExpanded && (
+        <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
+          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">
+            {programDescription || "No description provided."}
+          </p>
+
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onViewSubjects}
+              disabled={isBusy}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <ExternalIcon className="h-4 w-4" />
+              View subjects
+            </button>
+
+            <button
+              type="button"
+              onClick={onEdit}
+              disabled={isBusy}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <EditIcon className="h-4 w-4" />
+              Edit
+            </button>
+
+            <button
+              type="button"
+              onClick={onDelete}
+              disabled={isBusy}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <TrashIcon className="h-4 w-4" />
+              Delete
+            </button>
+          </div>
+        </div>
+      )}
+    </article>
+  );
+}
+
+function ProgramModal({
+  isOpen,
+  mode,
+  program,
+  isSaving = false,
+  canCreate = true,
+  onClose,
+  onSave,
+}) {
+  const [formValue, setFormValue] = useState({
+    name: "",
+    descr: "",
+  });
+
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    if (program) {
+      setFormValue({
+        name: getProgramName(program),
+        descr: getProgramDescription(program),
+      });
+    } else {
+      setFormValue({
+        name: "",
+        descr: "",
+      });
+    }
+
+    setError("");
+  }, [isOpen, program]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const handleEscape = (event) => {
+      if (event.key === "Escape" && !isSaving) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", handleEscape);
+    };
+  }, [isOpen, isSaving, onClose]);
+
+  if (!isOpen) {
+    return null;
+  }
+
+  const handleChange = (field, value) => {
+    setFormValue((currentValue) => ({
+      ...currentValue,
+      [field]: value,
+    }));
+
+    setError("");
+  };
+
+  const handleSave = async () => {
+    const nextProgram = {
+      id: program?.id ?? null,
+      name: formValue.name.trim(),
+      descr: formValue.descr.trim(),
+    };
+
+    if (!nextProgram.name) {
+      setError("Add a program name.");
+      return;
+    }
+
+    if (mode === "create" && !canCreate) {
+      setError("This program cannot be created right now.");
+      return;
+    }
+
+    try {
+      await onSave?.(nextProgram);
+      onClose?.();
+    } catch {
+      setError("Could not save this program.");
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Program form"
+      onMouseDown={() => {
+        if (!isSaving) {
+          onClose?.();
+        }
+      }}
+    >
+      <div
+        className="w-full max-w-xl rounded-2xl bg-white p-5 shadow-2xl"
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">
+              {mode === "edit" ? "Edit program" : "Create program"}
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {mode === "edit"
+                ? "Update the program name and description."
+                : "Add a program name and optional description."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+            aria-label="Close modal"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              Name
+            </label>
+
+            <input
+              value={formValue.name}
+              disabled={isSaving}
+              onChange={(event) => handleChange("name", event.target.value)}
+              placeholder="Program name"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-xs font-medium text-slate-600">
+              Description
+            </label>
+
+            <textarea
+              value={formValue.descr}
+              disabled={isSaving}
+              onChange={(event) => handleChange("descr", event.target.value)}
+              placeholder="Program description"
+              rows={5}
+              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+            />
+          </div>
+
+          {error && (
+            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="mt-6 flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={handleSave}
+            disabled={isSaving || (mode === "create" && !canCreate)}
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+          >
+            {isSaving ? "Saving..." : mode === "edit" ? "Save changes" : "Create"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminPrograms() {
-  const qc = useQueryClient();
-  const nav = useNavigate();
-  const [sp, setSp] = useSearchParams();
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const sort = sp.get("sort") || "created";
-  const dir = sp.get("dir") || "asc";
+  const sort = searchParams.get("sort") || "created";
+  const dir = searchParams.get("dir") || "asc";
 
-  const ovQ = useQuery({
+  const [expandedProgramId, setExpandedProgramId] = useState(null);
+  const [modalState, setModalState] = useState({
+    isOpen: false,
+    mode: "create",
+    program: null,
+  });
+
+  const overviewQuery = useQuery({
     queryKey: ["adminOverview"],
     queryFn: adminOverviewApi,
     retry: false,
   });
 
-  const programsQ = useQuery({
+  const programsQuery = useQuery({
     queryKey: ["programs", { sort, dir }],
     queryFn: () => listProgramsApi({ sort, dir }),
-    placeholderData: (prev) => prev,
+    placeholderData: (previousData) => previousData,
+    retry: false,
   });
 
-  const createM = useMutation({
+  const createMutation = useMutation({
     mutationFn: createProgramApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["programs"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+    },
   });
 
-  const updateM = useMutation({
+  const updateMutation = useMutation({
     mutationFn: ({ id, body }) => updateProgramApi(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["programs"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+    },
   });
 
-  const deleteM = useMutation({
+  const deleteMutation = useMutation({
     mutationFn: deleteProgramApi,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["programs"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["programs"] });
+    },
   });
 
-  const schools = ovQ.data?.schools || [];
-  const programs = programsQ.data || [];
+  const schools = overviewQuery.data?.schools ?? [];
+  const defaultSchoolId = schools[0]?.id ?? "";
+  const programs = programsQuery.data ?? [];
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isDeleting = deleteMutation.isPending;
+  const isBusy = isSaving || isDeleting;
+
   const totalPrograms = programs.length;
 
-  const [createOpen, setCreateOpen] = React.useState(false);
-  const [form, setForm] = React.useState({
-    school_id: "",
-    name: "",
-    descr: "",
-  });
-
-  const [editOpen, setEditOpen] = React.useState(false);
-  const [edit, setEdit] = React.useState({
-    id: "",
-    name: "",
-    descr: "",
-  });
-
-  const isBusy = createM.isPending || updateM.isPending || deleteM.isPending;
-
-  const onSort = (key) => {
-    const nextDir = sort === key ? (dir === "asc" ? "desc" : "asc") : "asc";
-    const n = new URLSearchParams(sp);
-    n.set("sort", key);
-    n.set("dir", nextDir);
-    setSp(n, { replace: true });
-  };
-
-  const sortedHint =
-    sort === "created"
-      ? dir === "asc"
-        ? "Created · Oldest first"
-        : "Created · Newest first"
-      : dir === "asc"
-        ? "Name · A to Z"
-        : "Name · Z to A";
-
-  const onCreate = () => {
-    if (!form.school_id || !form.name) return;
-
-    createM.mutate(form, {
-      onSuccess: () => {
-        setCreateOpen(false);
-        setForm({ school_id: "", name: "", descr: "" });
-      },
+  const handleOpenCreate = () => {
+    setModalState({
+      isOpen: true,
+      mode: "create",
+      program: null,
     });
   };
 
-  const onOpenEdit = (p) => {
-    setEdit({
-      id: p.id,
-      name: p.name ?? "",
-      descr: p.descr ?? "",
+  const handleOpenEdit = (program) => {
+    setModalState({
+      isOpen: true,
+      mode: "edit",
+      program,
     });
-    setEditOpen(true);
   };
 
-  const onSaveEdit = () => {
-    if (!edit.id) return;
+  const handleCloseModal = () => {
+    setModalState({
+      isOpen: false,
+      mode: "create",
+      program: null,
+    });
+  };
 
-    updateM.mutate(
-      {
-        id: edit.id,
+  const handleSaveProgram = async (nextProgram) => {
+    if (nextProgram.id) {
+      await updateMutation.mutateAsync({
+        id: nextProgram.id,
         body: {
-          name: edit.name,
-          descr: edit.descr,
+          name: nextProgram.name,
+          descr: nextProgram.descr,
         },
-      },
-      {
-        onSuccess: () => setEditOpen(false),
-      }
+      });
+
+      return;
+    }
+
+    await createMutation.mutateAsync({
+      school_id: defaultSchoolId,
+      name: nextProgram.name,
+      descr: nextProgram.descr,
+    });
+  };
+
+  const handleDeleteProgram = async (programId) => {
+    if (!programId) return;
+
+    await deleteMutation.mutateAsync(programId);
+
+    setExpandedProgramId((currentExpandedProgramId) =>
+      currentExpandedProgramId === programId ? null : currentExpandedProgramId
     );
   };
 
-  const viewSubjects = (programId) => {
-    const url = new URL(location.origin + "/dashboard/admin/subjects");
-    url.searchParams.set("program", programId);
-    url.searchParams.set("sort", "name");
-    url.searchParams.set("dir", "asc");
-    nav(url.pathname + url.search);
+  const handleToggleProgram = (programId) => {
+    setExpandedProgramId((currentProgramId) =>
+      currentProgramId === programId ? null : programId
+    );
   };
 
+  const handleViewSubjects = (programId) => {
+    const nextSearchParams = new URLSearchParams();
 
-  const getStableIndex = (value, max) => {
-    const str = String(value || "");
+    nextSearchParams.set("program", programId);
+    nextSearchParams.set("sort", "name");
+    nextSearchParams.set("dir", "asc");
 
-    let hash = 0;
-
-    for (let i = 0; i < str.length; i++) {
-      hash = (hash * 31 + str.charCodeAt(i)) >>> 0;
-    }
-
-    return hash % max;
+    navigate(`/dashboard/admin/subjects?${nextSearchParams.toString()}`);
   };
 
-  const programAccents = [
-    {
-      bg: "bg-emerald-50",
-      border: "border-emerald-200",
-      text: "text-emerald-700",
-    },
-    {
-      bg: "bg-sky-50",
-      border: "border-sky-200",
-      text: "text-sky-700",
-    },
-    {
-      bg: "bg-violet-50",
-      border: "border-violet-200",
-      text: "text-violet-700",
-    },
-    {
-      bg: "bg-amber-50",
-      border: "border-amber-200",
-      text: "text-amber-700",
-    },
-    {
-      bg: "bg-rose-50",
-      border: "border-rose-200",
-      text: "text-rose-700",
-    },
-  ];
+  const handleToggleSort = () => {
+    const nextSearchParams = new URLSearchParams(searchParams);
+    const nextDir = dir === "asc" ? "desc" : "asc";
+
+    nextSearchParams.set("sort", "name");
+    nextSearchParams.set("dir", nextDir);
+
+    setSearchParams(nextSearchParams, {
+      replace: true,
+    });
+  };
+
+  const sortedHint =
+    sort === "name"
+      ? dir === "asc"
+        ? "Name · A to Z"
+        : "Name · Z to A"
+      : dir === "asc"
+        ? "Created · Oldest first"
+        : "Created · Newest first";
+
+  if (overviewQuery.isLoading || programsQuery.isLoading) {
+    return (
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-slate-500">Loading programs...</p>
+        </section>
+      </main>
+    );
+  }
+
+  if (overviewQuery.isError || programsQuery.isError) {
+    return (
+      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
+          <p className="text-sm text-red-600">Error loading programs.</p>
+        </section>
+      </main>
+    );
+  }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-16vh-3rem)]  gap-4 overflow-hidden">
-      {/* Page header / worksheet header */}
-      <section className="h-1/3 col-span-9 grid grid-cols-9   overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-        <div className="col-span-3 border-r border-slate-200 bg-slate-50 p-5">
-          <p className="text-2xl font-semibold uppercase tracking-[0.16em] text-slate-500">
-            Programs
-          </p>
+    <main className="h-full min-h-0 overflow-hidden bg-slate-50">
+      <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
+        <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
+          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+            <div className="min-w-0">
+              <div className="flex items-center justify-between gap-3 sm:justify-start">
+                <h1 className="truncate text-base font-semibold text-slate-900">
+                  Programs
+                </h1>
 
-          <h1 className="mt-3 text-6xl font-semibold tracking-tight text-slate-950">
-            {totalPrograms}
-          </h1>
+                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
+                  {totalPrograms} configured
+                </span>
+              </div>
 
-
-        </div>
-
-        <div className="col-span-6 flex flex-col justify-between p-5">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-semibold text-slate-950">
-                Create and modify teaching programs
-              </h2>
-
-              <p className="mt-1 max-w-xl text-sm text-slate-500">
-                These programs define the subjects available for teaching and learning in related classes.
+              <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
+                Manage academic programs and their descriptions.
               </p>
             </div>
 
-            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-              <DialogTrigger asChild>
-                <Button className="gap-2 bg-[#3e4c59] hover:bg-[#616e7c] text-white">
-                  <Plus className="h-4 w-4" />
-                  Create program
-                </Button>
-              </DialogTrigger>
-
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create program</DialogTitle>
-                  <DialogDescription>
-                    Programs belong to a school. Name is required.
-                  </DialogDescription>
-                </DialogHeader>
-
-                <div className="grid gap-4 py-2">
-                  <div className="grid gap-2">
-                    <Label>School</Label>
-                    <Select
-                      value={form.school_id}
-                      onValueChange={(v) =>
-                        setForm((f) => ({ ...f, school_id: v }))
-                      }
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select school" />
-                      </SelectTrigger>
-
-                      <SelectContent>
-                        {schools.map((s) => (
-                          <SelectItem key={s.id} value={s.id}>
-                            {s.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Name</Label>
-                    <Input
-                      value={form.name}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, name: e.target.value }))
-                      }
-                      placeholder="e.g. Computer Science"
-                    />
-                  </div>
-
-                  <div className="grid gap-2">
-                    <Label>Description</Label>
-                    <Textarea
-                      value={form.descr}
-                      onChange={(e) =>
-                        setForm((f) => ({ ...f, descr: e.target.value }))
-                      }
-                      placeholder="Optional"
-                      rows={4}
-                    />
-                  </div>
-                </div>
-
-                <DialogFooter>
-                  <Button
-                    variant="outline"
-                    onClick={() => setCreateOpen(false)}
-                    disabled={createM.isPending}
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    onClick={onCreate}
-                    disabled={!form.school_id || !form.name || createM.isPending}
-                    className="gap-2"
-                  >
-                    {createM.isPending && (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    )}
-                    Create
-                  </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
-          </div>
-
-          <div className="mt-5 flex items-center justify-between gap-3">
-            <Badge className="rounded-full px-3 py-1 bg-[#e4e7eb] text-[#323f4b]">
-              {sortedHint}
-            </Badge>
-
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onSort("name")}
-                className="gap-2"
+            <div className="grid gap-2 sm:grid-cols-[auto_auto]">
+              <button
+                type="button"
+                onClick={handleToggleSort}
+                className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
               >
-                <ArrowUpDown className="h-4 w-4" />
-                Name
-              </Button>
+                {sortedHint}
+              </button>
 
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onSort("created")}
-                className="gap-2"
+              <button
+                type="button"
+                onClick={handleOpenCreate}
+                disabled={!defaultSchoolId || isBusy}
+                className="flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
-                <ArrowUpDown className="h-4 w-4" />
-                Created
-              </Button>
+                <PlusIcon className="h-4 w-4" />
+                Add program
+              </button>
             </div>
           </div>
-        </div>
-      </section>
+        </header>
 
-      {/* Scrollable cards area */}
-      <section className="col-span-9 min-h-0 overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between border-b border-slate-200 px-5 py-4">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-950">
-              Programs list
-            </h3>
-            <p className="mt-1 text-xs text-slate-500">
-              Select a program to manage its subjects and learning structure.
-            </p>
-          </div>
-        </div>
-
-        <div className="max-h-[calc(100vh-16vh-17rem)] overflow-y-auto p-4 pb-18">
-          {programsQ.isLoading && (
-            <div className="flex items-center gap-2 rounded-md border border-dashed border-slate-300 p-6 text-sm text-slate-500">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Loading programs…
+        <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm [scrollbar-gutter:stable]">
+          {programsQuery.isFetching && (
+            <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+              Refreshing programs...
             </div>
           )}
 
-          {programsQ.isError && (
-            <div className="rounded-md border border-red-200 bg-red-50 p-6 text-sm text-red-600">
-              Error loading programs.
-            </div>
-          )}
+          {!programs.length && (
+            <div className="grid h-full min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">
+                  No programs yet
+                </p>
 
-          {!programs.length && !programsQ.isLoading && (
-            <div className="rounded-md border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
-              <p className="text-sm font-medium text-slate-900">
-                No programs yet
-              </p>
-              <p className="mt-1 text-sm text-slate-500">
-                Create your first learning program to start organizing subjects.
-              </p>
-            </div>
-          )}
+                <p className="mt-1 max-w-sm text-sm text-slate-500">
+                  Add a program to start organizing academic content.
+                </p>
 
-          <div className="space-y-3">
-            {programs.map((p, index) => {
-              const accent = programAccents[
-                getStableIndex(p.id || p.name, programAccents.length)
-              ];
-
-              return (
-                <article
-                  key={p.id}
-                  className="grid grid-cols-9 overflow-hidden rounded-md border border-slate-200 
-                    bg-white transition hover:border-slate-300 hover:bg-slate-50/60"
+                <button
+                  type="button"
+                  onClick={handleOpenCreate}
+                  disabled={!defaultSchoolId || isBusy}
+                  className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
-                  <div
-                    className={[
-                      "col-span-1 flex items-start justify-center border-r px-3 py-5",
-                      accent.bg,
-                      accent.border,
-                    ].join(" ")}
-                  >
-                    <span
-                      className={[
-                        "text-sm font-semibold",
-                        accent.text,
-                      ].join(" ")}
-                    >
-                      {String(index + 1).padStart(2, "0")}
-                    </span>
-                  </div>
+                  Add first program
+                </button>
+              </div>
+            </div>
+          )}
 
-                  <div className="col-span-7 px-5 py-4">
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <h4 className="text-base font-semibold text-slate-950">
-                          {p.name}
-                        </h4>
+          {!!programs.length && (
+            <div className="space-y-2">
+              {programs.map((program) => {
+                const programId = getProgramId(program);
 
-                        <p className="mt-1 line-clamp-2 text-sm text-slate-500">
-                          {p.descr || "No description provided."}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* <div className="mt-4 flex flex-wrap items-center gap-3 text-xs text-slate-500">
-                      <span className="inline-flex items-center gap-1">
-                        <BookOpen className="h-3.5 w-3.5" />
-                        Subjects
-                      </span>
-
-                      <span className="inline-flex items-center gap-1">
-                        <Network className="h-3.5 w-3.5" />
-                        Knowledge graphs
-                      </span>
-
-                      <span>{sortedHint}</span>
-                    </div> */}
-                  </div>
-
-                  <div className="col-span-1 flex items-start justify-end px-4 py-4">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" disabled={isBusy}>
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => viewSubjects(p.id)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View subjects
-                        </DropdownMenuItem>
-
-                        <DropdownMenuItem onClick={() => onOpenEdit(p)}>
-                          <Pencil className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-
-                        <DropdownMenuSeparator />
-
-                        <DropdownMenuItem
-                          className="text-destructive focus:text-destructive"
-                          onClick={() => deleteM.mutate(p.id)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </article>
-              );
-            })}
-          </div>
+                return (
+                  <ProgramAccordion
+                    key={programId}
+                    program={program}
+                    isExpanded={expandedProgramId === programId}
+                    isBusy={isBusy}
+                    onToggle={() => handleToggleProgram(programId)}
+                    onEdit={() => handleOpenEdit(program)}
+                    onDelete={() => handleDeleteProgram(programId)}
+                    onViewSubjects={() => handleViewSubjects(programId)}
+                  />
+                );
+              })}
+            </div>
+          )}
         </div>
+
+        <ProgramModal
+          isOpen={modalState.isOpen}
+          mode={modalState.mode}
+          program={modalState.program}
+          isSaving={isSaving}
+          canCreate={Boolean(defaultSchoolId)}
+          onClose={handleCloseModal}
+          onSave={handleSaveProgram}
+        />
       </section>
-
-      {/* Edit dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit program</DialogTitle>
-            <DialogDescription>
-              Update name and description.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="grid gap-4 py-2">
-            <div className="grid gap-2">
-              <Label>Name</Label>
-              <Input
-                value={edit.name}
-                onChange={(e) =>
-                  setEdit((x) => ({ ...x, name: e.target.value }))
-                }
-              />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>Description</Label>
-              <Textarea
-                value={edit.descr}
-                onChange={(e) =>
-                  setEdit((x) => ({ ...x, descr: e.target.value }))
-                }
-                rows={4}
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => setEditOpen(false)}
-              disabled={updateM.isPending}
-            >
-              Cancel
-            </Button>
-
-            <Button
-              onClick={onSaveEdit}
-              disabled={updateM.isPending}
-              className="gap-2"
-            >
-              {updateM.isPending && (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              )}
-              Save
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </div>
+    </main>
   );
 }

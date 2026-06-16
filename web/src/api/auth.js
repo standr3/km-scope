@@ -34,3 +34,34 @@ export async function logoutApi() {
   setAccess("");
   return data;
 }
+
+
+export async function checkOrganizationAccessApi(payload) {
+  const { data } = await API.post("/auth/organization/check-access", payload);
+  return data;
+}
+
+export async function setupOrganizationAdminApi(payload) {
+  const { data } = await API.post("/auth/organization/setup-admin", payload);
+
+  if (data?.access_token) {
+    setAccess(data.access_token);
+  }
+
+  return data;
+}
+
+export async function checkMemberInviteApi(payload) {
+  const { data } = await API.post("/auth/member/check-invite", payload);
+  return data;
+}
+
+export async function acceptMemberInviteApi(payload) {
+  const { data } = await API.post("/auth/member/accept-invite", payload);
+
+  if (data?.access_token) {
+    setAccess(data.access_token);
+  }
+
+  return data;
+}

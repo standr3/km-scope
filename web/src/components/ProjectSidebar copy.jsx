@@ -42,10 +42,7 @@ export default function ProjectSidebar({ projectRole }) {
   }, [canScore, setScoringRoot]);
 
   const isMobile = () => {
-    return (
-      typeof window !== "undefined" &&
-      window.matchMedia("(max-width: 767px)").matches
-    );
+    return window.matchMedia("(max-width: 767px)").matches;
   };
 
   const toggleSidebar = () => {
@@ -92,23 +89,17 @@ export default function ProjectSidebar({ projectRole }) {
     });
   };
 
-  const collapsedActionClass =
-    "inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950";
-
-  const panelActionClass =
-    "inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700";
-
   return (
     <aside
       className={[
-        "z-30 overflow-hidden bg-white text-slate-950 shadow-sm transition-all duration-200",
+        "z-30 overflow-hidden border-slate-200 bg-white shadow-sm transition-all duration-200",
 
         // Mobile: bottom bar / bottom sheet.
-        "absolute inset-x-0 bottom-0 border-t border-slate-200",
-        expanded ? "h-[70vh] rounded-t-2xl" : "h-14",
+        "absolute inset-x-0 bottom-0 border-t",
+        expanded ? "h-[70vh]" : "h-14",
 
         // Desktop: left sidebar. Width is controlled by ProjectShell.
-        "md:relative md:inset-auto md:h-full md:w-full md:rounded-none md:border-r md:border-t-0",
+        "md:relative md:inset-auto md:h-full md:w-full md:border-r md:border-t-0",
       ].join(" ")}
     >
       <div className="flex h-full flex-col">
@@ -116,14 +107,14 @@ export default function ProjectSidebar({ projectRole }) {
           <>
             <div
               className={[
-                "grid h-14 shrink-0 items-center bg-white px-2 md:hidden",
+                "grid h-14 shrink-0 items-center bg-white md:hidden",
                 canScore ? "grid-cols-4" : "grid-cols-3",
               ].join(" ")}
             >
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+                className="flex h-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                 title="Expand"
               >
                 <PanelBottomOpen size={18} />
@@ -132,7 +123,7 @@ export default function ProjectSidebar({ projectRole }) {
               <button
                 type="button"
                 onClick={() => actionsRef.current.addNode?.()}
-                className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+                className="flex h-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                 title="New concept"
               >
                 <Plus size={18} />
@@ -142,7 +133,7 @@ export default function ProjectSidebar({ projectRole }) {
                 <button
                   type="button"
                   onClick={openScoringFromCollapsed}
-                  className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+                  className="flex h-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                   title="Scoring"
                 >
                   <ChartColumnStacked size={18} />
@@ -152,7 +143,7 @@ export default function ProjectSidebar({ projectRole }) {
               <button
                 type="button"
                 onClick={openEventsFromCollapsed}
-                className="mx-auto inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-950"
+                className="flex h-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                 title="Event log"
               >
                 <ScrollText size={18} />
@@ -160,34 +151,34 @@ export default function ProjectSidebar({ projectRole }) {
             </div>
 
             <div className="hidden h-full flex-col bg-white md:flex">
-              <div className="flex h-14 shrink-0 items-center justify-center border-b border-slate-200 bg-white">
+              <div className="flex h-14 shrink-0 items-center justify-center border-b border-slate-200">
                 <button
                   type="button"
                   onClick={toggleSidebar}
-                  className={collapsedActionClass}
+                  className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                   title="Expand"
                 >
                   <PanelLeftOpen size={18} />
                 </button>
               </div>
 
-              <div className="flex flex-1 items-center justify-center bg-slate-50/60">
+              <div className="flex flex-1 items-center justify-center">
                 <button
                   type="button"
                   onClick={() => actionsRef.current.addNode?.()}
-                  className="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-slate-900 text-white shadow-sm transition hover:bg-slate-800"
+                  className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                   title="New concept"
                 >
                   <Plus size={18} />
                 </button>
               </div>
 
-              <div className="flex shrink-0 flex-col items-center gap-2 border-t border-slate-200 bg-white py-3">
+              <div className="flex shrink-0 flex-col items-center gap-2 border-t border-slate-200 py-3">
                 {canScore && (
                   <button
                     type="button"
                     onClick={openScoringFromCollapsed}
-                    className={collapsedActionClass}
+                    className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                     title="Scoring"
                   >
                     <ChartColumnStacked size={18} />
@@ -197,7 +188,7 @@ export default function ProjectSidebar({ projectRole }) {
                 <button
                   type="button"
                   onClick={openEventsFromCollapsed}
-                  className={collapsedActionClass}
+                  className="flex h-10 w-10 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                   title="Event log"
                 >
                   <ScrollText size={18} />
@@ -209,11 +200,11 @@ export default function ProjectSidebar({ projectRole }) {
 
         {expanded && (
           <>
-            <div className="flex h-16 shrink-0 items-center gap-2 border-b border-slate-200 bg-white p-3">
+            <div className="flex h-14 shrink-0 items-center gap-2 border-b border-slate-200 bg-white p-2">
               <button
                 type="button"
                 onClick={toggleSidebar}
-                className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-500 shadow-sm transition hover:bg-slate-50 hover:text-slate-950"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
                 title="Collapse"
               >
                 <span className="hidden md:inline-flex">
@@ -228,7 +219,7 @@ export default function ProjectSidebar({ projectRole }) {
               <button
                 type="button"
                 onClick={() => actionsRef.current.addNode?.()}
-                className="inline-flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800"
+                className="flex h-10 min-w-0 flex-1 items-center justify-center gap-2 rounded-md bg-slate-800 px-3 text-sm font-semibold text-white hover:bg-slate-700"
                 title="New concept"
               >
                 <Plus size={17} className="shrink-0" />
@@ -236,26 +227,22 @@ export default function ProjectSidebar({ projectRole }) {
               </button>
             </div>
 
-            <div className="min-h-0 flex flex-1 flex-col overflow-hidden bg-slate-50">
+            <div className="min-h-0 flex flex-1 flex-col overflow-hidden bg-white">
               {canScore && (
                 <section
                   className={[
-                    "m-3 mb-0 flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200",
-                    scoringOpen ? "flex-1" : "h-11 shrink-0",
+                    "flex min-h-0 flex-col border-b border-slate-200 transition-all duration-200",
+                    scoringOpen ? "flex-1" : "h-9 shrink-0",
                   ].join(" ")}
                 >
-                  <div className="flex h-11 shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-3">
+                  <div className="flex h-9 shrink-0 items-center gap-2 border-b border-slate-200 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                     <button
                       type="button"
                       onClick={toggleScoringSection}
-                      className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:text-slate-950"
+                      className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-slate-700"
                     >
-                      <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                        <ChartColumnStacked size={15} />
-                      </span>
-
+                      <ChartColumnStacked size={15} className="shrink-0" />
                       <span className="min-w-0 flex-1 truncate">Scoring</span>
-
                       <ChevronDown
                         size={15}
                         className={[
@@ -268,7 +255,7 @@ export default function ProjectSidebar({ projectRole }) {
                     <button
                       type="button"
                       onClick={() => actionsRef.current.scoreSession?.()}
-                      className={panelActionClass}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                       title="Score session"
                     >
                       <BookOpenCheck size={14} />
@@ -286,22 +273,18 @@ export default function ProjectSidebar({ projectRole }) {
 
               <section
                 className={[
-                  "m-3 flex min-h-0 flex-col overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-all duration-200",
-                  eventsOpen ? "flex-1" : "h-11 shrink-0",
+                  "flex min-h-0 flex-col transition-all duration-200",
+                  eventsOpen ? "flex-1" : "h-9 shrink-0",
                 ].join(" ")}
               >
-                <div className="flex h-11 shrink-0 items-center gap-2 border-b border-slate-100 bg-white px-3">
+                <div className="flex h-9 shrink-0 items-center gap-2 border-b border-slate-200 px-3 text-xs font-semibold uppercase tracking-wide text-slate-500">
                   <button
                     type="button"
                     onClick={toggleEventsSection}
-                    className="flex min-w-0 flex-1 items-center gap-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:text-slate-950"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left hover:text-slate-700"
                   >
-                    <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-600">
-                      <ScrollText size={15} />
-                    </span>
-
+                    <ScrollText size={15} className="shrink-0" />
                     <span className="min-w-0 flex-1 truncate">Event log</span>
-
                     <ChevronDown
                       size={15}
                       className={[
@@ -315,7 +298,7 @@ export default function ProjectSidebar({ projectRole }) {
                     <button
                       type="button"
                       onClick={() => actionsRef.current.clearProjectState?.()}
-                      className={panelActionClass}
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-sm text-slate-400 hover:bg-slate-100 hover:text-slate-600"
                       title="Reset project state"
                     >
                       <RotateCcw size={14} />

@@ -11,7 +11,7 @@ import Welcome from "./pages/Welcome";
 import Login from "./pages/Login";
 import SignupChoice from "./pages/SignupChoice";
 import SignupSchool from "./pages/SignupSchool";
-import SignupMember from "./pages/SignupMember";
+// import SignupMember from "./pages/SignupMember";
 
 import DashboardLayout from "./pages/DashboardLayout";
 
@@ -78,7 +78,7 @@ const router = createBrowserRouter([
       { path: "/login", element: <Login /> },
       { path: "/signup", element: <SignupChoice /> },
       { path: "/signup/school", element: <SignupSchool /> },
-      { path: "/signup/member", element: <SignupMember /> },
+      { path: "/signup/member", element: <Navigate to="/login" replace /> },
     ],
   },
 

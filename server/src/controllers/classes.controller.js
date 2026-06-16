@@ -15,7 +15,10 @@ function rowsToDto(rows) {
     classroom_id: r.classroom_id,
     classroom_name: r.classroom_name,
     start_period_id: r.start_period_id,
-    end_period_id: r.end_period_id
+    end_period_id: r.end_period_id,
+
+    projects: r.projects ?? [],
+
   }));
 }
 
@@ -163,6 +166,55 @@ export async function listTeacherClasses(req, res) {
  ORDER BY lower(c.name) ASC`, [req.user.id]);
   return res.json({ success:true, classes: rowsToDto(rows) });
 }
+
+
+export async function listTeacherClassesWithProjects(req, res) {
+  const { rows } = await pool.query(
+    `
+    SELECT
+      c.*,
+      sb.name AS subject_name,
+      pg.name AS program_name,
+      s.name AS school_name,
+      pg.school_id,
+      t.email AS teacher_email,
+      cr.name AS classroom_name,
+      COALESCE(projects.projects, '[]'::jsonb) AS projects
+    FROM classes c
+    JOIN subjects sb ON sb.id = c.subject_id
+    JOIN programs pg ON pg.id = sb.program_id
+    JOIN schools s ON s.id = pg.school_id
+    JOIN users t ON t.id = c.teacher_id
+    LEFT JOIN classrooms cr ON cr.id = c.classroom_id
+
+    LEFT JOIN LATERAL (
+      SELECT jsonb_agg(
+        jsonb_build_object(
+          'id', p.id,
+          'classId', p.class_id,
+          'name', p.name,
+          'ownerId', p.owner_id,
+          'isLocked', p.is_locked,
+          'createdAt', p.created_at
+        )
+        ORDER BY lower(p.name) ASC
+      ) AS projects
+      FROM projects p
+      WHERE p.class_id = c.id
+    ) projects ON true
+
+    WHERE c.teacher_id = $1
+    ORDER BY lower(c.name) ASC
+    `,
+    [req.user.id]
+  );
+
+  return res.json({
+    success: true,
+    classes: rowsToDto(rows),
+  });
+}
+
 
 export async function listStudentClasses(req, res) {
   const { rows } = await pool.query(
