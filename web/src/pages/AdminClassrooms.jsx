@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Pencil,
+  Plus,
+  Search,
+  Trash2,
+  UserMinus,
+  UserPlus,
+  X,
+} from "lucide-react";
+
+import {
   adminOverviewApi,
   listClassroomsAdminApi,
   createClassroomApi,
@@ -11,104 +21,6 @@ import {
   removeStudentFromClassroomApi,
 } from "../api/admin";
 
-function PlusIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function EditIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="m4 20 4.5-1 10-10a2.12 2.12 0 0 0-3-3l-10 10L4 20ZM13.5 6.5l3 3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function SearchIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="m21 21-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function XIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M6 6l12 12M18 6 6 18"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UserPlusIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UserMinusIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M16 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2M9.5 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 11h-6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function getClassroomId(classroom) {
   return String(classroom.id);
 }
@@ -118,7 +30,11 @@ function getClassroomName(classroom) {
 }
 
 function getClassroomSchoolName(classroom) {
-  return classroom.school_name ?? classroom.schoolName ?? "No school assigned.";
+  return (
+    classroom.school_name ??
+    classroom.schoolName ??
+    "No school assigned."
+  );
 }
 
 function getStudentId(student) {
@@ -157,7 +73,9 @@ function ClassroomModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     if (classroom) {
       setFormValue({
@@ -173,9 +91,12 @@ function ClassroomModal({
   }, [isOpen, classroom]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return undefined;
+    }
 
     const previousOverflow = document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     const handleEscape = (event) => {
@@ -247,13 +168,15 @@ function ClassroomModal({
         <div className="mb-5 flex items-start justify-between gap-4">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">
-              {mode === "edit" ? "Rename classroom" : "Create classroom"}
+              {mode === "edit"
+                ? "Rename classroom"
+                : "Create classroom"}
             </h2>
 
             <p className="mt-1 text-sm text-slate-500">
               {mode === "edit"
                 ? "Update the classroom name."
-                : "Add a classroom name for the current school."}
+                : "Add a classroom for the current school."}
             </p>
           </div>
 
@@ -261,41 +184,43 @@ function ClassroomModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            ✕
+            <X className="h-5 w-5" strokeWidth={1.8} />
           </button>
         </div>
 
-        <div className="space-y-4">
-          <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
-              Name
-            </label>
+        <div>
+          <label
+            htmlFor="classroom-name"
+            className="mb-1 block text-xs font-medium text-slate-600"
+          >
+            Name
+          </label>
 
-            <input
-              value={formValue.name}
-              disabled={isSaving}
-              onChange={(event) => handleChange(event.target.value)}
-              placeholder="e.g. 10A"
-              className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
-            />
-          </div>
-
-          {error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              {error}
-            </div>
-          )}
+          <input
+            id="classroom-name"
+            value={formValue.name}
+            disabled={isSaving}
+            onChange={(event) => handleChange(event.target.value)}
+            placeholder="e.g. 10A"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+          />
         </div>
+
+        {error && (
+          <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+            {error}
+          </div>
+        )}
 
         <div className="mt-6 flex justify-end gap-2">
           <button
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -304,9 +229,13 @@ function ClassroomModal({
             type="button"
             onClick={handleSave}
             disabled={isSaving || (mode === "create" && !canCreate)}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isSaving ? "Saving..." : mode === "edit" ? "Save changes" : "Create"}
+            {isSaving
+              ? "Saving..."
+              : mode === "edit"
+                ? "Save changes"
+                : "Create"}
           </button>
         </div>
       </div>
@@ -318,90 +247,117 @@ function ClassroomCard({
   classroom,
   isSelected,
   isBusy,
+  isDeleting,
   onSelect,
   onEdit,
   onDelete,
 }) {
+  const classroomName = getClassroomName(classroom);
+
   return (
     <article
       className={[
-        "rounded-2xl border bg-white p-3 shadow-sm transition",
+        "grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border bg-white px-5 py-5 transition-colors",
         isSelected
-          ? "border-slate-400 bg-slate-50"
-          : "border-slate-200 hover:border-slate-300 hover:bg-slate-50/70",
+          ? "border-slate-900 ring-2 ring-slate-100"
+          : "border-slate-200 hover:border-slate-300",
       ].join(" ")}
     >
       <button
         type="button"
         onClick={onSelect}
-        className="block w-full min-w-0 text-left"
+        className="min-w-0 text-left"
       >
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="truncate text-sm font-semibold text-slate-900">
-            {getClassroomName(classroom)}
+          <h2 className="truncate text-lg font-medium text-slate-950">
+            {classroomName}
           </h2>
 
           {isSelected && (
-            <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-semibold text-emerald-700">
+            <span className="rounded-full bg-slate-950 px-2.5 py-1 text-[11px] font-semibold text-white">
               Selected
             </span>
           )}
         </div>
 
-        <p className="mt-1 truncate text-xs text-slate-500">
+        <p className="mt-2 truncate text-sm text-slate-400">
           {getClassroomSchoolName(classroom)}
         </p>
       </button>
 
-      <div className="mt-3 flex justify-end gap-2 border-t border-slate-100 pt-3">
+      <div className="flex shrink-0 items-center gap-1">
         <button
           type="button"
           onClick={onEdit}
           disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+          title={`Rename ${classroomName}`}
+          aria-label={`Rename ${classroomName}`}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <EditIcon className="h-4 w-4" />
-          Rename
+          <Pencil className="h-5 w-5" strokeWidth={1.8} />
         </button>
 
         <button
           type="button"
           onClick={onDelete}
           disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
+          title={`Delete ${classroomName}`}
+          aria-label={`Delete ${classroomName}`}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
         >
-          <TrashIcon className="h-4 w-4" />
-          Delete
+          <Trash2
+            className={[
+              "h-5 w-5",
+              isDeleting ? "animate-pulse" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            strokeWidth={1.8}
+          />
         </button>
       </div>
     </article>
   );
 }
 
-function MemberCard({ student, isBusy, onRemove }) {
+function MemberCard({
+  student,
+  isBusy,
+  isRemoving,
+  onRemove,
+}) {
+  const studentName = getStudentName(student);
+
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/70">
-      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-slate-900">
-            {getStudentName(student)}
-          </h2>
+    <article className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 transition-colors hover:border-slate-300">
+      <div className="min-w-0">
+        <h2 className="truncate text-base font-medium text-slate-950">
+          {studentName}
+        </h2>
 
-          <p className="mt-1 truncate text-xs text-slate-500">
-            {getStudentEmail(student)}
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={onRemove}
-          disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <UserMinusIcon className="h-4 w-4" />
-          Remove
-        </button>
+        <p className="mt-2 truncate text-sm text-slate-400">
+          {getStudentEmail(student) || "No email available"}
+        </p>
       </div>
+
+      <button
+        type="button"
+        onClick={onRemove}
+        disabled={isBusy}
+        title={`Remove ${studentName}`}
+        aria-label={`Remove ${studentName}`}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <UserMinus
+          className={[
+            "h-5 w-5",
+            isRemoving ? "animate-pulse" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          strokeWidth={1.8}
+        />
+      </button>
     </article>
   );
 }
@@ -412,6 +368,11 @@ export default function AdminClassrooms() {
   const [selectedClassroom, setSelectedClassroom] = useState(null);
   const [roomSearch, setRoomSearch] = useState("");
   const [studentEmail, setStudentEmail] = useState("");
+  const [deletingClassroomId, setDeletingClassroomId] =
+    useState(null);
+  const [removingStudentId, setRemovingStudentId] =
+    useState(null);
+
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: "create",
@@ -431,8 +392,12 @@ export default function AdminClassrooms() {
   });
 
   const studentsQuery = useQuery({
-    queryKey: ["classroom-students", selectedClassroom?.id],
-    queryFn: () => listClassroomStudentsApi(selectedClassroom.id),
+    queryKey: [
+      "classroom-students",
+      selectedClassroom?.id,
+    ],
+    queryFn: () =>
+      listClassroomStudentsApi(selectedClassroom.id),
     enabled: Boolean(selectedClassroom?.id),
     retry: false,
   });
@@ -440,21 +405,34 @@ export default function AdminClassrooms() {
   const createMutation = useMutation({
     mutationFn: createClassroomApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      queryClient.invalidateQueries({
+        queryKey: ["classrooms"],
+      });
     },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, body }) => updateClassroomApi(id, body),
+    mutationFn: ({ id, body }) =>
+      updateClassroomApi(id, body),
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      queryClient.invalidateQueries({
+        queryKey: ["classrooms"],
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteClassroomApi,
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classrooms"] });
+      queryClient.invalidateQueries({
+        queryKey: ["classrooms"],
+      });
+    },
+
+    onSettled: () => {
+      setDeletingClassroomId(null);
     },
   });
 
@@ -463,9 +441,13 @@ export default function AdminClassrooms() {
       addStudentToClassroomApi(classroomId, {
         student_id: studentId,
       }),
+
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["classroom-students", variables.classroomId],
+        queryKey: [
+          "classroom-students",
+          variables.classroomId,
+        ],
       });
     },
   });
@@ -475,43 +457,72 @@ export default function AdminClassrooms() {
       removeStudentFromClassroomApi(classroomId, {
         student_id: studentId,
       }),
+
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({
-        queryKey: ["classroom-students", variables.classroomId],
+        queryKey: [
+          "classroom-students",
+          variables.classroomId,
+        ],
       });
+    },
+
+    onSettled: () => {
+      setRemovingStudentId(null);
     },
   });
 
   const schools = overviewQuery.data?.schools ?? [];
   const defaultSchoolId = schools[0]?.id ?? "";
-  const allStudents = normalizeOverviewStudents(overviewQuery.data?.students ?? []);
+
+  const allStudents = normalizeOverviewStudents(
+    overviewQuery.data?.students ?? []
+  );
+
   const classrooms = classroomsQuery.data ?? [];
   const members = studentsQuery.data ?? [];
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    createMutation.isPending ||
+    updateMutation.isPending;
+
   const isDeleting = deleteMutation.isPending;
+
   const isMembershipBusy =
-    addStudentMutation.isPending || removeStudentMutation.isPending;
-  const isBusy = isSaving || isDeleting || isMembershipBusy;
+    addStudentMutation.isPending ||
+    removeStudentMutation.isPending;
+
+  const isBusy =
+    isSaving ||
+    isDeleting ||
+    isMembershipBusy;
 
   const filteredClassrooms = useMemo(() => {
     const query = roomSearch.trim().toLowerCase();
 
-    if (!query) return classrooms;
+    if (!query) {
+      return classrooms;
+    }
 
     return classrooms.filter((classroom) => {
       const name = getClassroomName(classroom).toLowerCase();
-      const schoolName = getClassroomSchoolName(classroom).toLowerCase();
 
-      return name.includes(query) || schoolName.includes(query);
+      const schoolName =
+        getClassroomSchoolName(classroom).toLowerCase();
+
+      return (
+        name.includes(query) ||
+        schoolName.includes(query)
+      );
     });
   }, [classrooms, roomSearch]);
 
   const membersCount = members.length;
+
   const selectedLabel = selectedClassroom
-    ? `${getClassroomName(selectedClassroom)} · ${getClassroomSchoolName(
+    ? `${getClassroomName(
         selectedClassroom
-      )}`
+      )} · ${getClassroomSchoolName(selectedClassroom)}`
     : "No classroom selected";
 
   const handleOpenCreate = () => {
@@ -531,6 +542,10 @@ export default function AdminClassrooms() {
   };
 
   const handleCloseModal = () => {
+    if (isSaving) {
+      return;
+    }
+
     setModalState({
       isOpen: false,
       mode: "create",
@@ -538,8 +553,14 @@ export default function AdminClassrooms() {
     });
   };
 
-  const handleSaveClassroom = async (nextClassroom) => {
-    if (nextClassroom.id) {
+  const handleSaveClassroom = async (
+    nextClassroom
+  ) => {
+    const isExistingClassroom =
+      nextClassroom.id !== null &&
+      nextClassroom.id !== undefined;
+
+    if (isExistingClassroom) {
       await updateMutation.mutateAsync({
         id: nextClassroom.id,
         body: {
@@ -547,14 +568,20 @@ export default function AdminClassrooms() {
         },
       });
 
-      setSelectedClassroom((currentClassroom) =>
-        currentClassroom?.id === nextClassroom.id
-          ? {
-              ...currentClassroom,
-              name: nextClassroom.name,
-            }
-          : currentClassroom
-      );
+      setSelectedClassroom((currentClassroom) => {
+        if (
+          !currentClassroom ||
+          getClassroomId(currentClassroom) !==
+            String(nextClassroom.id)
+        ) {
+          return currentClassroom;
+        }
+
+        return {
+          ...currentClassroom,
+          name: nextClassroom.name,
+        };
+      });
 
       return;
     }
@@ -565,27 +592,59 @@ export default function AdminClassrooms() {
     });
   };
 
-  const handleDeleteClassroom = async (classroom) => {
-    if (!window.confirm(`Delete classroom "${getClassroomName(classroom)}"?`)) {
+  const handleDeleteClassroom = async (
+    classroom
+  ) => {
+    const classroomId = getClassroomId(classroom);
+
+    const confirmed = window.confirm(
+      `Delete classroom "${getClassroomName(classroom)}"?`
+    );
+
+    if (!confirmed) {
       return;
     }
 
-    await deleteMutation.mutateAsync(classroom.id);
+    setDeletingClassroomId(classroomId);
 
-    setSelectedClassroom((currentClassroom) =>
-      currentClassroom?.id === classroom.id ? null : currentClassroom
-    );
+    try {
+      await deleteMutation.mutateAsync(classroom.id);
+
+      setSelectedClassroom((currentClassroom) => {
+        if (
+          currentClassroom &&
+          getClassroomId(currentClassroom) === classroomId
+        ) {
+          return null;
+        }
+
+        return currentClassroom;
+      });
+    } catch (error) {
+      window.alert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not delete this classroom."
+      );
+    }
   };
 
   const handleAddStudent = async () => {
-    if (!selectedClassroom?.id) return;
+    if (!selectedClassroom?.id) {
+      return;
+    }
 
-    const normalizedEmail = studentEmail.trim().toLowerCase();
+    const normalizedEmail =
+      studentEmail.trim().toLowerCase();
 
-    if (!normalizedEmail) return;
+    if (!normalizedEmail) {
+      return;
+    }
 
     const student = allStudents.find(
-      (candidate) => candidate.email?.toLowerCase() === normalizedEmail
+      (candidate) =>
+        candidate.email?.toLowerCase() ===
+        normalizedEmail
     );
 
     if (!student) {
@@ -593,318 +652,413 @@ export default function AdminClassrooms() {
       return;
     }
 
-    await addStudentMutation.mutateAsync({
-      classroomId: selectedClassroom.id,
-      studentId: student.id,
-    });
+    const isAlreadyMember = members.some(
+      (member) =>
+        String(getStudentId(member)) ===
+        String(student.id)
+    );
 
-    setStudentEmail("");
+    if (isAlreadyMember) {
+      window.alert(
+        "This student is already in the classroom."
+      );
+      return;
+    }
+
+    try {
+      await addStudentMutation.mutateAsync({
+        classroomId: selectedClassroom.id,
+        studentId: student.id,
+      });
+
+      setStudentEmail("");
+    } catch (error) {
+      window.alert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not add this student."
+      );
+    }
   };
 
-  const handleRemoveStudent = async (studentId) => {
-    if (!selectedClassroom?.id || !studentId) return;
+  const handleRemoveStudent = async (
+    studentId
+  ) => {
+    if (
+      !selectedClassroom?.id ||
+      !studentId
+    ) {
+      return;
+    }
 
-    await removeStudentMutation.mutateAsync({
-      classroomId: selectedClassroom.id,
-      studentId,
-    });
+    setRemovingStudentId(String(studentId));
+
+    try {
+      await removeStudentMutation.mutateAsync({
+        classroomId: selectedClassroom.id,
+        studentId,
+      });
+    } catch (error) {
+      window.alert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not remove this student."
+      );
+    }
   };
 
-  if (overviewQuery.isLoading || classroomsQuery.isLoading) {
+  if (
+    overviewQuery.isLoading ||
+    classroomsQuery.isLoading
+  ) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-slate-500">Loading classrooms...</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <p className="text-sm text-slate-500">
+          Loading classrooms...
+        </p>
       </main>
     );
   }
 
-  if (overviewQuery.isError || classroomsQuery.isError) {
+  if (
+    overviewQuery.isError ||
+    classroomsQuery.isError
+  ) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-red-600">Error loading classrooms.</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">
+            Error loading classrooms.
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-      <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-        <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+    <main className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+      {/* Header fix */}
+      <header className="relative shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(148,163,184,0.14),transparent_34%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_30%)]" />
+
+        <div className="relative flex min-h-[112px] flex-col justify-center gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div>
+            <p className="text-xs font-medium text-slate-400">
+              {classrooms.length} configured
+            </p>
+
+            <h1 className="mt-2 text-2xl font-semibold leading-none tracking-tight text-white">
+              Classrooms
+            </h1>
+
+            <p className="mt-2 line-clamp-1 text-sm text-slate-400">
+              {selectedLabel}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            disabled={!defaultSchoolId || isBusy}
+            className={[
+              "inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-slate-950 transition",
+              "sm:w-auto sm:min-w-[150px]",
+              "hover:bg-slate-100",
+              "focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2 focus:ring-offset-slate-950",
+              "disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400",
+            ].join(" ")}
+          > 
+            Create
+          </button>
+        </div>
+      </header>
+
+      {/* Controale fixe */}
+      <div className="shrink-0 bg-transparent px-4 py-5 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+          <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] gap-2 lg:max-w-md">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+
+              <input
+                value={roomSearch}
+                onChange={(event) =>
+                  setRoomSearch(event.target.value)
+                }
+                placeholder="Search classrooms..."
+                className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+              />
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRoomSearch("")}
+              disabled={!roomSearch}
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
+            >
+              <X className="h-4 w-4" strokeWidth={1.8} />
+              Clear
+            </button>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+            <span className="text-slate-500">
+              Students:
+            </span>
+
+            <span className="font-semibold text-slate-900">
+              {allStudents.length}
+            </span>
+
+            <span
+              aria-hidden="true"
+              className="h-4 border-l border-slate-300"
+            />
+
+            <span className="text-slate-500">
+              Members:
+            </span>
+
+            <span className="font-semibold text-slate-900">
+              {selectedClassroom ? membersCount : "—"}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Listele ocupă spațiul rămas */}
+      <section className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-2">
+        {/* Lista claselor */}
+        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-transparent">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 pb-3 sm:px-6 lg:px-8">
             <div className="min-w-0">
-              <div className="flex items-center justify-between gap-3 sm:justify-start">
-                <h1 className="truncate text-base font-semibold text-slate-900">
-                  Classrooms
-                </h1>
+              <h2 className="truncate text-sm font-semibold text-slate-900">
+                Classroom list
+              </h2>
 
-                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                  {classrooms.length} configured
-                </span>
-              </div>
-
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
-                {selectedLabel}
+              <p className="mt-1 truncate text-xs text-slate-500">
+                Select a classroom to manage its students.
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_auto_auto]">
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
-                <div className="text-[11px] font-semibold text-sky-700">
-                  Students
-                </div>
-
-                <div className="mt-0.5 text-sm font-semibold text-slate-900">
-                  {allStudents.length}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-                <div className="text-[11px] font-semibold text-emerald-700">
-                  Members
-                </div>
-
-                <div className="mt-0.5 text-sm font-semibold text-slate-900">
-                  {selectedClassroom ? membersCount : "—"}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenCreate}
-                disabled={!defaultSchoolId || isBusy}
-                className="col-span-2 flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:col-span-1"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add classroom
-              </button>
-            </div>
-          </div>
-        </header>
-
-        <section className="grid min-h-0 gap-3 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <div className="grid min-h-0 grid-rows-[auto_auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-sm font-semibold text-slate-900">
-                    Classroom list
-                  </h2>
-
-                  <p className="mt-1 truncate text-xs text-slate-500">
-                    Select a classroom to manage students.
-                  </p>
-                </div>
-
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                  {filteredClassrooms.length} shown
-                </span>
-              </div>
-            </div>
-
-            <div className="border-b border-slate-100 p-3">
-              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
-                <div className="relative">
-                  <SearchIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-
-                  <input
-                    value={roomSearch}
-                    onChange={(event) => setRoomSearch(event.target.value)}
-                    placeholder="Search classrooms..."
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white pl-9 pr-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
-                  />
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => setRoomSearch("")}
-                  disabled={!roomSearch}
-                  className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400"
-                >
-                  <XIcon className="h-4 w-4" />
-                  Clear
-                </button>
-              </div>
-            </div>
-
-            <div className="min-h-0 overflow-y-auto p-3 [scrollbar-gutter:stable]">
-              {!filteredClassrooms.length && (
-                <div className="grid h-full min-h-[240px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900">
-                      No classrooms found
-                    </p>
-
-                    <p className="mt-1 max-w-sm text-sm text-slate-500">
-                      Add a classroom or adjust the search query.
-                    </p>
-                  </div>
-                </div>
-              )}
-
-              {!!filteredClassrooms.length && (
-                <div className="space-y-2">
-                  {filteredClassrooms.map((classroom) => {
-                    const classroomId = getClassroomId(classroom);
-
-                    return (
-                      <ClassroomCard
-                        key={classroomId}
-                        classroom={classroom}
-                        isSelected={selectedClassroom?.id === classroom.id}
-                        isBusy={isBusy}
-                        onSelect={() => setSelectedClassroom(classroom)}
-                        onEdit={() => handleOpenEdit(classroom)}
-                        onDelete={() => handleDeleteClassroom(classroom)}
-                      />
-                    );
-                  })}
-                </div>
-              )}
-            </div>
+            <span className="shrink-0 text-xs font-medium text-slate-400">
+              {filteredClassrooms.length} shown
+            </span>
           </div>
 
-          <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-            <div className="border-b border-slate-100 px-3 py-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-sm font-semibold text-slate-900">
-                    Members
-                  </h2>
-
-                  <p className="mt-1 truncate text-xs text-slate-500">
-                    Add or remove students from the selected classroom.
-                  </p>
-                </div>
-
-                <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">
-                  {selectedClassroom ? `${membersCount} members` : "None"}
-                </span>
-              </div>
-            </div>
-
-            {!selectedClassroom && (
-              <div className="grid min-h-0 place-items-center p-3">
-                <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+          <div className="min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-8 pt-4 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
+            {!filteredClassrooms.length && (
+              <div className="grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-6 text-center">
+                <div>
                   <p className="text-sm font-semibold text-slate-900">
-                    No classroom selected
+                    No classrooms found
                   </p>
 
                   <p className="mt-1 max-w-sm text-sm text-slate-500">
-                    Select a classroom from the list to manage its membership.
+                    Add a classroom or adjust the search query.
                   </p>
                 </div>
               </div>
             )}
 
-            {selectedClassroom && (
-              <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)]">
-                <div className="border-b border-slate-100 p-3">
-                  <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {getClassroomName(selectedClassroom)}
-                      </p>
+            {!!filteredClassrooms.length && (
+              <div className="space-y-3">
+                {filteredClassrooms.map((classroom) => {
+                  const classroomId =
+                    getClassroomId(classroom);
 
-                      <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
-                        Classroom
-                      </span>
-                    </div>
+                  const selectedId = selectedClassroom
+                    ? getClassroomId(selectedClassroom)
+                    : null;
 
-                    <p className="mt-1 truncate text-xs text-slate-500">
-                      {getClassroomSchoolName(selectedClassroom)}
-                    </p>
-                  </div>
-
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
-                    Add student by email
-                  </label>
-
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
-                    <input
-                      value={studentEmail}
-                      onChange={(event) => setStudentEmail(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter") {
-                          handleAddStudent();
-                        }
-                      }}
-                      placeholder="student@example.com"
-                      className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                  return (
+                    <ClassroomCard
+                      key={classroomId}
+                      classroom={classroom}
+                      isSelected={
+                        selectedId === classroomId
+                      }
+                      isBusy={isBusy}
+                      isDeleting={
+                        isDeleting &&
+                        deletingClassroomId ===
+                          classroomId
+                      }
+                      onSelect={() =>
+                        setSelectedClassroom(classroom)
+                      }
+                      onEdit={() =>
+                        handleOpenEdit(classroom)
+                      }
+                      onDelete={() =>
+                        handleDeleteClassroom(classroom)
+                      }
                     />
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
 
-                    <button
-                      type="button"
-                      onClick={handleAddStudent}
-                      disabled={!studentEmail.trim() || isMembershipBusy}
-                      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                      <UserPlusIcon className="h-4 w-4" />
-                      Add
-                    </button>
-                  </div>
+        {/* Membrii clasei */}
+        <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-transparent">
+          <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-4 pb-3 sm:px-6 lg:px-8">
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-semibold text-slate-900">
+                Members
+              </h2>
 
-                  <p className="mt-2 text-xs text-slate-500">
-                    This searches students from the admin overview list.
+              <p className="mt-1 truncate text-xs text-slate-500">
+                Add or remove students from the selected classroom.
+              </p>
+            </div>
+
+            <span className="shrink-0 text-xs font-medium text-slate-400">
+              {selectedClassroom
+                ? `${membersCount} members`
+                : "None"}
+            </span>
+          </div>
+
+          {!selectedClassroom && (
+            <div className="grid min-h-0 place-items-center p-4 sm:p-6 lg:p-8">
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
+                <p className="text-sm font-semibold text-slate-900">
+                  No classroom selected
+                </p>
+
+                <p className="mt-1 max-w-sm text-sm text-slate-500">
+                  Select a classroom from the list to manage its
+                  membership.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {selectedClassroom && (
+            <div className="grid min-h-0 grid-rows-[auto_minmax(0,1fr)] overflow-hidden">
+              <div className="shrink-0 px-4 py-4 sm:px-6 lg:px-8">
+                <div className="mb-4">
+                  <p className="text-sm font-semibold text-slate-900">
+                    {getClassroomName(selectedClassroom)}
+                  </p>
+
+                  <p className="mt-1 truncate text-xs text-slate-500">
+                    {getClassroomSchoolName(selectedClassroom)}
                   </p>
                 </div>
 
-                <div className="min-h-0 overflow-y-auto p-3 [scrollbar-gutter:stable]">
-                  {studentsQuery.isLoading && (
-                    <div className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-500">
-                      Loading members...
-                    </div>
-                  )}
+                <label
+                  htmlFor="classroom-student-email"
+                  className="mb-1 block text-xs font-medium text-slate-600"
+                >
+                  Add student by email
+                </label>
 
-                  {!members.length && !studentsQuery.isLoading && (
-                    <div className="grid h-full min-h-[220px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+                <div className="grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+                  <input
+                    id="classroom-student-email"
+                    value={studentEmail}
+                    onChange={(event) =>
+                      setStudentEmail(event.target.value)
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        handleAddStudent();
+                      }
+                    }}
+                    placeholder="student@example.com"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={handleAddStudent}
+                    disabled={
+                      !studentEmail.trim() ||
+                      isMembershipBusy
+                    }
+                    className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <UserPlus
+                      className="h-4 w-4"
+                      strokeWidth={1.8}
+                    />
+                    Add
+                  </button>
+                </div>
+              </div>
+
+              <div className="min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-8 pt-1 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
+                {studentsQuery.isLoading && (
+                  <div className="rounded-xl border border-slate-200 bg-white/80 px-3 py-2 text-sm text-slate-500">
+                    Loading members...
+                  </div>
+                )}
+
+                {studentsQuery.isError && (
+                  <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+                    Error loading members.
+                  </div>
+                )}
+
+                {!members.length &&
+                  !studentsQuery.isLoading && (
+                    <div className="grid min-h-[220px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-6 text-center">
                       <div>
                         <p className="text-sm font-semibold text-slate-900">
                           No members in this classroom
                         </p>
 
                         <p className="mt-1 max-w-sm text-sm text-slate-500">
-                          Add students by email to populate this classroom.
+                          Add students by email to populate this
+                          classroom.
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {!!members.length && (
-                    <div className="space-y-2">
-                      {members.map((member) => {
-                        const memberId = getStudentId(member);
+                {!!members.length && (
+                  <div className="space-y-3">
+                    {members.map((member) => {
+                      const memberId =
+                        getStudentId(member);
 
-                        return (
-                          <MemberCard
-                            key={memberId}
-                            student={member}
-                            isBusy={isMembershipBusy}
-                            onRemove={() => handleRemoveStudent(memberId)}
-                          />
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
+                      return (
+                        <MemberCard
+                          key={memberId}
+                          student={member}
+                          isBusy={isMembershipBusy}
+                          isRemoving={
+                            removeStudentMutation.isPending &&
+                            removingStudentId ===
+                              String(memberId)
+                          }
+                          onRemove={() =>
+                            handleRemoveStudent(memberId)
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
-
-        <ClassroomModal
-          isOpen={modalState.isOpen}
-          mode={modalState.mode}
-          classroom={modalState.classroom}
-          isSaving={isSaving}
-          canCreate={Boolean(defaultSchoolId)}
-          onClose={handleCloseModal}
-          onSave={handleSaveClassroom}
-        />
+            </div>
+          )}
+        </div>
       </section>
+
+      <ClassroomModal
+        isOpen={modalState.isOpen}
+        mode={modalState.mode}
+        classroom={modalState.classroom}
+        isSaving={isSaving}
+        canCreate={Boolean(defaultSchoolId)}
+        onClose={handleCloseModal}
+        onSave={handleSaveClassroom}
+      />
     </main>
   );
 }

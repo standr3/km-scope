@@ -1,6 +1,8 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
+import { ChevronDown, Pencil, Trash2, X } from "lucide-react";
+
 import {
   adminOverviewApi,
   listProgramsApi,
@@ -8,101 +10,6 @@ import {
   updateProgramApi,
   deleteProgramApi,
 } from "../api/admin";
-
-function ChevronDownIcon({ className = "" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="m6 9 6 6 6-6"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function PlusIcon({ className = "" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function EditIcon({ className = "" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="m4 20 4.5-1 10-10a2.12 2.12 0 0 0-3-3l-10 10L4 20ZM13.5 6.5l3 3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon({ className = "" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ExternalIcon({ className = "" }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-hidden="true"
-      className={className}
-    >
-      <path
-        d="M14 5h5v5M19 5l-8 8M19 14v5H5V5h5"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
 
 function getProgramId(program) {
   return String(program.id);
@@ -116,11 +23,10 @@ function getProgramDescription(program) {
   return program.descr ?? program.description ?? "";
 }
 
-function ProgramAccordion({
+function ProgramCard({
   program,
-  isExpanded,
   isBusy,
-  onToggle,
+  isDeleting,
   onEdit,
   onDelete,
   onViewSubjects,
@@ -129,68 +35,57 @@ function ProgramAccordion({
   const programDescription = getProgramDescription(program);
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm transition hover:border-slate-300">
-      <button
-        type="button"
-        onClick={onToggle}
-        aria-expanded={isExpanded}
-        className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-slate-50"
-      >
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold text-slate-900">
-            {programName}
-          </h2>
-        </div>
+    <article className="grid grid-cols-1 items-center gap-6 rounded-2xl border border-slate-200 bg-white px-6 py-7 transition-colors hover:border-slate-300 sm:grid-cols-[minmax(0,1fr)_auto] sm:px-8">
+      <div className="min-w-0">
+        <h2 className="truncate text-xl font-medium text-slate-950">
+          {programName}
+        </h2>
 
-        <ChevronDownIcon
-          className={[
-            "h-4 w-4 shrink-0 text-slate-400 transition-transform",
-            isExpanded ? "rotate-180" : "",
-          ]
-            .filter(Boolean)
-            .join(" ")}
-        />
-      </button>
+        <p className="mt-2 line-clamp-2 text-sm text-slate-400">
+          {programDescription || "No description provided."}
+        </p>
+      </div>
 
-      {isExpanded && (
-        <div className="border-t border-slate-100 bg-slate-50/70 px-4 py-3">
-          <p className="whitespace-pre-wrap text-sm leading-6 text-slate-600">
-            {programDescription || "No description provided."}
-          </p>
+      <div className="flex flex-wrap items-center justify-end gap-2 sm:flex-nowrap sm:gap-3">
+        <button
+          type="button"
+          onClick={onEdit}
+          disabled={isBusy}
+          title={`Edit ${programName}`}
+          aria-label={`Edit ${programName}`}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-slate-950 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Pencil className="h-5 w-5" strokeWidth={1.8} />
+        </button>
 
-          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-end">
-            <button
-              type="button"
-              onClick={onViewSubjects}
-              disabled={isBusy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <ExternalIcon className="h-4 w-4" />
-              View subjects
-            </button>
+        <button
+          type="button"
+          onClick={onDelete}
+          disabled={isBusy}
+          title={`Delete ${programName}`}
+          aria-label={`Delete ${programName}`}
+          className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <Trash2
+            className={[
+              "h-5 w-5",
+              isDeleting ? "animate-pulse" : "",
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            strokeWidth={1.8}
+          />
+        </button>
 
-            <button
-              type="button"
-              onClick={onEdit}
-              disabled={isBusy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <EditIcon className="h-4 w-4" />
-              Edit
-            </button>
-
-            <button
-              type="button"
-              onClick={onDelete}
-              disabled={isBusy}
-              className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              <TrashIcon className="h-4 w-4" />
-              Delete
-            </button>
-          </div>
-        </div>
-      )}
+        <button
+          type="button"
+          onClick={onViewSubjects}
+          disabled={isBusy}
+          className="inline-flex h-10 min-w-[150px] items-center justify-center rounded-lg border border-slate-400 bg-white px-5 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          View Subjects
+        </button>
+      </div>
     </article>
   );
 }
@@ -212,7 +107,9 @@ function ProgramModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     if (program) {
       setFormValue({
@@ -230,9 +127,12 @@ function ProgramModal({
   }, [isOpen, program]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return undefined;
+    }
 
     const previousOverflow = document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     const handleEscape = (event) => {
@@ -320,40 +220,52 @@ function ProgramModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Close modal"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            ✕
+            <X className="h-5 w-5" strokeWidth={1.8} />
           </button>
         </div>
 
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="program-name"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Name
             </label>
 
             <input
+              id="program-name"
               value={formValue.name}
               disabled={isSaving}
-              onChange={(event) => handleChange("name", event.target.value)}
+              onChange={(event) =>
+                handleChange("name", event.target.value)
+              }
               placeholder="Program name"
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
           </div>
 
           <div>
-            <label className="mb-1 block text-xs font-medium text-slate-600">
+            <label
+              htmlFor="program-description"
+              className="mb-1 block text-xs font-medium text-slate-600"
+            >
               Description
             </label>
 
             <textarea
+              id="program-description"
               value={formValue.descr}
               disabled={isSaving}
-              onChange={(event) => handleChange("descr", event.target.value)}
+              onChange={(event) =>
+                handleChange("descr", event.target.value)
+              }
               placeholder="Program description"
               rows={5}
-              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+              className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
             />
           </div>
 
@@ -369,7 +281,7 @@ function ProgramModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -378,9 +290,13 @@ function ProgramModal({
             type="button"
             onClick={handleSave}
             disabled={isSaving || (mode === "create" && !canCreate)}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
-            {isSaving ? "Saving..." : mode === "edit" ? "Save changes" : "Create"}
+            {isSaving
+              ? "Saving..."
+              : mode === "edit"
+                ? "Save changes"
+                : "Create"}
           </button>
         </div>
       </div>
@@ -393,10 +309,11 @@ export default function AdminPrograms() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const sort = searchParams.get("sort") || "created";
+  const sort = searchParams.get("sort") || "name";
   const dir = searchParams.get("dir") || "asc";
 
-  const [expandedProgramId, setExpandedProgramId] = useState(null);
+  const [deletingProgramId, setDeletingProgramId] = useState(null);
+
   const [modalState, setModalState] = useState({
     isOpen: false,
     mode: "create",
@@ -419,21 +336,30 @@ export default function AdminPrograms() {
   const createMutation = useMutation({
     mutationFn: createProgramApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({
+        queryKey: ["programs"],
+      });
     },
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, body }) => updateProgramApi(id, body),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({
+        queryKey: ["programs"],
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteProgramApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["programs"] });
+      queryClient.invalidateQueries({
+        queryKey: ["programs"],
+      });
+    },
+    onSettled: () => {
+      setDeletingProgramId(null);
     },
   });
 
@@ -441,7 +367,9 @@ export default function AdminPrograms() {
   const defaultSchoolId = schools[0]?.id ?? "";
   const programs = programsQuery.data ?? [];
 
-  const isSaving = createMutation.isPending || updateMutation.isPending;
+  const isSaving =
+    createMutation.isPending || updateMutation.isPending;
+
   const isDeleting = deleteMutation.isPending;
   const isBusy = isSaving || isDeleting;
 
@@ -464,6 +392,10 @@ export default function AdminPrograms() {
   };
 
   const handleCloseModal = () => {
+    if (isSaving) {
+      return;
+    }
+
     setModalState({
       isOpen: false,
       mode: "create",
@@ -472,7 +404,10 @@ export default function AdminPrograms() {
   };
 
   const handleSaveProgram = async (nextProgram) => {
-    if (nextProgram.id) {
+    const isExistingProgram =
+      nextProgram.id !== null && nextProgram.id !== undefined;
+
+    if (isExistingProgram) {
       await updateMutation.mutateAsync({
         id: nextProgram.id,
         body: {
@@ -491,20 +426,29 @@ export default function AdminPrograms() {
     });
   };
 
-  const handleDeleteProgram = async (programId) => {
-    if (!programId) return;
+  const handleDeleteProgram = async (program) => {
+    const programId = getProgramId(program);
+    const programName = getProgramName(program);
 
-    await deleteMutation.mutateAsync(programId);
-
-    setExpandedProgramId((currentExpandedProgramId) =>
-      currentExpandedProgramId === programId ? null : currentExpandedProgramId
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${programName}"?`
     );
-  };
 
-  const handleToggleProgram = (programId) => {
-    setExpandedProgramId((currentProgramId) =>
-      currentProgramId === programId ? null : programId
-    );
+    if (!confirmed) {
+      return;
+    }
+
+    setDeletingProgramId(programId);
+
+    try {
+      await deleteMutation.mutateAsync(programId);
+    } catch (error) {
+      window.alert(
+        error?.response?.data?.message ||
+        error?.message ||
+        "Could not delete this program."
+      );
+    }
   };
 
   const handleViewSubjects = (programId) => {
@@ -514,7 +458,9 @@ export default function AdminPrograms() {
     nextSearchParams.set("sort", "name");
     nextSearchParams.set("dir", "asc");
 
-    navigate(`/dashboard/admin/subjects?${nextSearchParams.toString()}`);
+    navigate(
+      `/dashboard/admin/subjects?${nextSearchParams.toString()}`
+    );
   };
 
   const handleToggleSort = () => {
@@ -529,93 +475,110 @@ export default function AdminPrograms() {
     });
   };
 
-  const sortedHint =
-    sort === "name"
-      ? dir === "asc"
-        ? "Name · A to Z"
-        : "Name · Z to A"
-      : dir === "asc"
-        ? "Created · Oldest first"
-        : "Created · Newest first";
+  const sortedHint = dir === "asc" ? "A to Z" : "Z to A";
 
   if (overviewQuery.isLoading || programsQuery.isLoading) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-slate-500">Loading programs...</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <p className="text-sm text-slate-500">
+          Loading programs...
+        </p>
       </main>
     );
   }
 
   if (overviewQuery.isError || programsQuery.isError) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-red-600">Error loading programs.</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">
+            Error loading programs.
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-      <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-        <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-          <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
-            <div className="min-w-0">
-              <div className="flex items-center justify-between gap-3 sm:justify-start">
-                <h1 className="truncate text-base font-semibold text-slate-900">
-                  Programs
-                </h1>
+    <main className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+      {/* Zona fixă: header + sortare */}
+      <div className="shrink-0 bg-transparent">
+        <header className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(148,163,184,0.14),transparent_34%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_30%)]" />
 
-                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                  {totalPrograms} configured
-                </span>
-              </div>
-
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
-                Manage academic programs and their descriptions.
+          <div className="relative flex min-h-[112px] flex-col justify-center gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div>
+              <p className="text-xs font-medium text-slate-400">
+                {totalPrograms}{" "}
+                {totalPrograms === 1 ? "item" : "items"}
               </p>
+
+              <h1 className="mt-2 text-2xl font-semibold leading-none tracking-tight text-white">
+                Programs
+              </h1>
             </div>
 
-            <div className="grid gap-2 sm:grid-cols-[auto_auto]">
-              <button
-                type="button"
-                onClick={handleToggleSort}
-                className="h-10 rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50"
-              >
-                {sortedHint}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleOpenCreate}
-                disabled={!defaultSchoolId || isBusy}
-                className="flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Add program
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              disabled={!defaultSchoolId || isBusy}
+              className={[
+                "inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-slate-950 shadow-sm transition",
+                "sm:w-auto sm:min-w-[120px]",
+                "hover:bg-slate-100",
+                "focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2 focus:ring-offset-slate-950",
+                "disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400",
+              ].join(" ")}
+            >
+              Create
+            </button>
           </div>
         </header>
 
-        <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm [scrollbar-gutter:stable]">
+        <div className="flex items-center gap-3 bg-transparent px-4 py-5 text-sm sm:px-6 lg:px-8">
+          <span className="text-slate-500">Sort:</span>
+
+          <span
+            aria-hidden="true"
+            className="h-4 border-l border-slate-300"
+          />
+
+          <button
+            type="button"
+            onClick={handleToggleSort}
+            disabled={programsQuery.isFetching || isBusy}
+            className="inline-flex items-center gap-1 text-blue-500 transition-colors hover:text-blue-700 disabled:cursor-wait disabled:opacity-50"
+          >
+            {sortedHint}
+
+            <ChevronDown
+              className={[
+                "h-3 w-3 transition-transform",
+                dir === "desc" ? "rotate-180" : "",
+              ].join(" ")}
+              strokeWidth={2}
+            />
+          </button>
+        </div>
+      </div>
+
+      {/* Doar această zonă are scroll */}
+      <section className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-transparent [scrollbar-gutter:stable]">
+        <div className="space-y-3 bg-transparent px-4 pb-8 pt-4 sm:px-6 lg:px-8">
           {programsQuery.isFetching && (
-            <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               Refreshing programs...
-            </div>
+            </p>
           )}
 
           {!programs.length && (
-            <div className="grid h-full min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+            <div className="grid min-h-[220px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/70 p-6 text-center">
               <div>
                 <p className="text-sm font-semibold text-slate-900">
                   No programs yet
                 </p>
 
-                <p className="mt-1 max-w-sm text-sm text-slate-500">
+                <p className="mt-1 text-sm text-slate-500">
                   Add a program to start organizing academic content.
                 </p>
 
@@ -623,46 +586,45 @@ export default function AdminPrograms() {
                   type="button"
                   onClick={handleOpenCreate}
                   disabled={!defaultSchoolId || isBusy}
-                  className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="mt-4 rounded-lg border border-slate-400 bg-white px-5 py-2 text-sm font-medium text-slate-950 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40"
                 >
-                  Add first program
+                  Create program
                 </button>
               </div>
             </div>
           )}
 
-          {!!programs.length && (
-            <div className="space-y-2">
-              {programs.map((program) => {
-                const programId = getProgramId(program);
+          {programs.map((program) => {
+            const programId = getProgramId(program);
 
-                return (
-                  <ProgramAccordion
-                    key={programId}
-                    program={program}
-                    isExpanded={expandedProgramId === programId}
-                    isBusy={isBusy}
-                    onToggle={() => handleToggleProgram(programId)}
-                    onEdit={() => handleOpenEdit(program)}
-                    onDelete={() => handleDeleteProgram(programId)}
-                    onViewSubjects={() => handleViewSubjects(programId)}
-                  />
-                );
-              })}
-            </div>
-          )}
+            return (
+              <ProgramCard
+                key={programId}
+                program={program}
+                isBusy={isBusy}
+                isDeleting={
+                  isDeleting && deletingProgramId === programId
+                }
+                onEdit={() => handleOpenEdit(program)}
+                onDelete={() => handleDeleteProgram(program)}
+                onViewSubjects={() =>
+                  handleViewSubjects(programId)
+                }
+              />
+            );
+          })}
         </div>
-
-        <ProgramModal
-          isOpen={modalState.isOpen}
-          mode={modalState.mode}
-          program={modalState.program}
-          isSaving={isSaving}
-          canCreate={Boolean(defaultSchoolId)}
-          onClose={handleCloseModal}
-          onSave={handleSaveProgram}
-        />
       </section>
+
+      <ProgramModal
+        isOpen={modalState.isOpen}
+        mode={modalState.mode}
+        program={modalState.program}
+        isSaving={isSaving}
+        canCreate={Boolean(defaultSchoolId)}
+        onClose={handleCloseModal}
+        onSave={handleSaveProgram}
+      />
     </main>
   );
 }

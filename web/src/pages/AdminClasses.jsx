@@ -1,6 +1,16 @@
 import React, { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  BookOpen,
+  Clock3,
+  DoorOpen,
+  Plus,
+  Trash2,
+  UserRound,
+  X,
+} from "lucide-react";
+
+import {
   adminOverviewApi,
   listProgramsApi,
   listSubjectsAdminApi,
@@ -12,103 +22,24 @@ import {
   listSchoolYearsAdminApi,
 } from "../api/admin";
 
-function PlusIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M12 5v14M5 12h14"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function TrashIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M4 7h16M10 11v6M14 11v6M6 7l1 13h10l1-13M9 7V4h6v3"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function BookIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M4 19.5V5.75A2.75 2.75 0 0 1 6.75 3H20v15H6.75A2.75 2.75 0 0 0 4 20.75M4 19.5A2.5 2.5 0 0 0 6.5 22H20"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function ClockIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function DoorIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M4 21h16M6 21V4.5A1.5 1.5 0 0 1 7.5 3H18v18M10 12h.01"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function UserIcon({ className = "" }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" className={className}>
-      <path
-        d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function pad2(value) {
   return String(value).padStart(2, "0");
 }
 
 function formatTime(value) {
-  if (!value) return "-";
+  if (!value) {
+    return "-";
+  }
 
   const time = String(value);
 
   if (/^\d{1,2}:\d{2}/.test(time)) {
     const [hours, minutes] = time.split(":").map(Number);
 
-    if (!Number.isFinite(hours) || !Number.isFinite(minutes)) {
+    if (
+      !Number.isFinite(hours) ||
+      !Number.isFinite(minutes)
+    ) {
       return "-";
     }
 
@@ -139,63 +70,108 @@ function getClassroomName(classroom) {
 }
 
 function getSchoolYearName(year) {
-  return year.name ?? `${year.start_date ?? ""} - ${year.end_date ?? ""}`;
+  return (
+    year.name ??
+    `${year.start_date ?? ""} - ${year.end_date ?? ""}`
+  );
 }
 
 function getPeriodLabel(period) {
-  return `${formatTime(period.start_time)} - ${formatTime(period.end_time)}`;
+  return `${formatTime(period.start_time)} - ${formatTime(
+    period.end_time
+  )}`;
 }
 
-function ClassCard({ classItem, isBusy, onDelete }) {
+function ClassCard({
+  classItem,
+  isBusy,
+  isDeleting,
+  onDelete,
+}) {
+  const className = classItem.name || "Untitled class";
+
   return (
-    <article className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm transition hover:border-slate-300 hover:bg-slate-50/70">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-sm font-semibold text-slate-900">
-              {classItem.name}
-            </h2>
+    <article className="grid grid-cols-1 gap-5 rounded-2xl border border-slate-200 bg-white px-5 py-5 transition-colors hover:border-slate-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="truncate text-lg font-medium text-slate-950">
+            {className}
+          </h2>
 
-            <span className="rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700">
-              Class
-            </span>
-          </div>
-
-          <p className="mt-1 flex items-center gap-1 truncate text-xs text-slate-500">
-            <BookIcon className="h-3.5 w-3.5 shrink-0" />
-            {classItem.subject_name || "No subject"}
-            {classItem.program_name ? ` · ${classItem.program_name}` : ""}
-          </p>
+          <span className="rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] font-semibold text-sky-700">
+            Class
+          </span>
         </div>
 
-        <button
-          type="button"
-          onClick={onDelete}
-          disabled={isBusy}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          <TrashIcon className="h-4 w-4" />
-          Delete
-        </button>
+        <p className="mt-2 flex min-w-0 items-center gap-2 text-sm text-slate-400">
+          <BookOpen
+            className="h-4 w-4 shrink-0"
+            strokeWidth={1.8}
+          />
+
+          <span className="truncate">
+            {classItem.subject_name || "No subject"}
+
+            {classItem.program_name
+              ? ` · ${classItem.program_name}`
+              : ""}
+          </span>
+        </p>
+
+        <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-600">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5">
+            <UserRound
+              className="h-3.5 w-3.5"
+              strokeWidth={1.8}
+            />
+
+            {classItem.teacher_email || "No teacher"}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5">
+            <DoorOpen
+              className="h-3.5 w-3.5"
+              strokeWidth={1.8}
+            />
+
+            {classItem.classroom_name || "No classroom"}
+          </span>
+
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-3 py-1.5">
+            <Clock3
+              className="h-3.5 w-3.5"
+              strokeWidth={1.8}
+            />
+
+            {classItem.start_period_id
+              ? "Start set"
+              : "No start"}{" "}
+            /{" "}
+            {classItem.end_period_id
+              ? "End set"
+              : "No end"}
+          </span>
+        </div>
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3 text-xs text-slate-600">
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
-          <UserIcon className="h-3.5 w-3.5" />
-          {classItem.teacher_email || "-"}
-        </span>
-
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
-          <DoorIcon className="h-3.5 w-3.5" />
-          {classItem.classroom_name || "-"}
-        </span>
-
-        <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-1">
-          <ClockIcon className="h-3.5 w-3.5" />
-          {classItem.start_period_id ? "Start set" : "No start"} /{" "}
-          {classItem.end_period_id ? "End set" : "No end"}
-        </span>
-      </div>
+      <button
+        type="button"
+        onClick={onDelete}
+        disabled={isBusy}
+        title={`Delete ${className}`}
+        aria-label={`Delete ${className}`}
+        className="inline-flex h-10 w-10 shrink-0 items-center justify-center justify-self-end rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <Trash2
+          className={[
+            "h-5 w-5",
+            isDeleting ? "animate-pulse" : "",
+          ]
+            .filter(Boolean)
+            .join(" ")}
+          strokeWidth={1.8}
+        />
+      </button>
     </article>
   );
 }
@@ -224,15 +200,20 @@ function ClassModal({
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return;
+    }
 
     setError("");
   }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen) {
+      return undefined;
+    }
 
     const previousOverflow = document.body.style.overflow;
+
     document.body.style.overflow = "hidden";
 
     const handleEscape = (event) => {
@@ -300,8 +281,9 @@ function ClassModal({
                 Create class
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                Assign a subject to a teacher and optionally connect the class to a classroom and periods.
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">
+                Assign a subject to a teacher and optionally connect
+                the class to a classroom and periods.
               </p>
             </div>
 
@@ -309,10 +291,10 @@ function ClassModal({
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="rounded-lg px-2 py-1 text-sm text-slate-500 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Close modal"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
-              ✕
+              <X className="h-5 w-5" strokeWidth={1.8} />
             </button>
           </div>
         </div>
@@ -326,20 +308,29 @@ function ClassModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-program"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Program
                   </label>
 
                   <select
+                    id="class-program"
                     value={programId}
-                    onChange={(event) => onProgramChange(event.target.value)}
+                    onChange={(event) =>
+                      onProgramChange(event.target.value)
+                    }
                     disabled={isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">Select program</option>
 
                     {programs.map((program) => (
-                      <option key={program.id} value={program.id}>
+                      <option
+                        key={program.id}
+                        value={program.id}
+                      >
                         {getProgramName(program)}
                       </option>
                     ))}
@@ -347,24 +338,40 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-subject"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Subject
                   </label>
 
                   <select
+                    id="class-subject"
                     value={formValue.subject_id}
                     onChange={(event) =>
-                      onFormChange("subject_id", event.target.value)
+                      onFormChange(
+                        "subject_id",
+                        event.target.value
+                      )
                     }
-                    disabled={!programId || isSubjectsLoading || isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    disabled={
+                      !programId ||
+                      isSubjectsLoading ||
+                      isSaving
+                    }
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">
-                      {!programId ? "Select program first" : "Select subject"}
+                      {!programId
+                        ? "Select program first"
+                        : "Select subject"}
                     </option>
 
                     {subjects.map((subject) => (
-                      <option key={subject.id} value={subject.id}>
+                      <option
+                        key={subject.id}
+                        value={subject.id}
+                      >
                         {getSubjectName(subject)}
                       </option>
                     ))}
@@ -378,22 +385,32 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-teacher"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Teacher
                   </label>
 
                   <select
+                    id="class-teacher"
                     value={formValue.teacher_id}
                     onChange={(event) =>
-                      onFormChange("teacher_id", event.target.value)
+                      onFormChange(
+                        "teacher_id",
+                        event.target.value
+                      )
                     }
                     disabled={isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">Select teacher</option>
 
                     {teachers.map((teacher) => (
-                      <option key={getTeacherId(teacher)} value={getTeacherId(teacher)}>
+                      <option
+                        key={getTeacherId(teacher)}
+                        value={getTeacherId(teacher)}
+                      >
                         {getTeacherLabel(teacher)}
                       </option>
                     ))}
@@ -401,16 +418,22 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-name"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Class name
                   </label>
 
                   <input
+                    id="class-name"
                     value={formValue.name}
-                    onChange={(event) => onFormChange("name", event.target.value)}
+                    onChange={(event) =>
+                      onFormChange("name", event.target.value)
+                    }
                     disabled={isSaving}
                     placeholder="e.g. Math 10A"
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   />
                 </div>
               </div>
@@ -423,22 +446,32 @@ function ClassModal({
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-classroom"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Classroom
                   </label>
 
                   <select
+                    id="class-classroom"
                     value={formValue.classroom_id}
                     onChange={(event) =>
-                      onFormChange("classroom_id", event.target.value)
+                      onFormChange(
+                        "classroom_id",
+                        event.target.value
+                      )
                     }
                     disabled={isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">No classroom</option>
 
                     {classrooms.map((classroom) => (
-                      <option key={classroom.id} value={classroom.id}>
+                      <option
+                        key={classroom.id}
+                        value={classroom.id}
+                      >
                         {getClassroomName(classroom)}
                       </option>
                     ))}
@@ -446,20 +479,29 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-year"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Year for periods
                   </label>
 
                   <select
+                    id="class-year"
                     value={yearId}
-                    onChange={(event) => onYearChange(event.target.value)}
+                    onChange={(event) =>
+                      onYearChange(event.target.value)
+                    }
                     disabled={isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">No periods</option>
 
                     {years.map((year) => (
-                      <option key={year.id} value={year.id}>
+                      <option
+                        key={year.id}
+                        value={year.id}
+                      >
                         {getSchoolYearName(year)}
                       </option>
                     ))}
@@ -467,24 +509,40 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-start-period"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     Start period
                   </label>
 
                   <select
+                    id="class-start-period"
                     value={formValue.start_period_id}
                     onChange={(event) =>
-                      onFormChange("start_period_id", event.target.value)
+                      onFormChange(
+                        "start_period_id",
+                        event.target.value
+                      )
                     }
-                    disabled={!yearId || isPeriodsLoading || isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    disabled={
+                      !yearId ||
+                      isPeriodsLoading ||
+                      isSaving
+                    }
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">
-                      {!yearId ? "Select year first" : "No start period"}
+                      {!yearId
+                        ? "Select year first"
+                        : "No start period"}
                     </option>
 
                     {periods.map((period) => (
-                      <option key={period.id} value={period.id}>
+                      <option
+                        key={period.id}
+                        value={period.id}
+                      >
                         {getPeriodLabel(period)}
                       </option>
                     ))}
@@ -492,24 +550,40 @@ function ClassModal({
                 </div>
 
                 <div>
-                  <label className="mb-1 block text-xs font-medium text-slate-600">
+                  <label
+                    htmlFor="class-end-period"
+                    className="mb-1 block text-xs font-medium text-slate-600"
+                  >
                     End period
                   </label>
 
                   <select
+                    id="class-end-period"
                     value={formValue.end_period_id}
                     onChange={(event) =>
-                      onFormChange("end_period_id", event.target.value)
+                      onFormChange(
+                        "end_period_id",
+                        event.target.value
+                      )
                     }
-                    disabled={!yearId || isPeriodsLoading || isSaving}
-                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+                    disabled={
+                      !yearId ||
+                      isPeriodsLoading ||
+                      isSaving
+                    }
+                    className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
                   >
                     <option value="">
-                      {!yearId ? "Select year first" : "No end period"}
+                      {!yearId
+                        ? "Select year first"
+                        : "No end period"}
                     </option>
 
                     {periods.map((period) => (
-                      <option key={period.id} value={period.id}>
+                      <option
+                        key={period.id}
+                        value={period.id}
+                      >
                         {getPeriodLabel(period)}
                       </option>
                     ))}
@@ -537,7 +611,7 @@ function ClassModal({
             type="button"
             onClick={onClose}
             disabled={isSaving}
-            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
           >
             Cancel
           </button>
@@ -546,7 +620,7 @@ function ClassModal({
             type="button"
             onClick={handleSave}
             disabled={!canCreate || isSaving}
-            className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            className="rounded-xl bg-slate-950 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
           >
             {isSaving ? "Creating..." : "Create"}
           </button>
@@ -562,6 +636,8 @@ export default function AdminClasses() {
   const [createOpen, setCreateOpen] = useState(false);
   const [programId, setProgramId] = useState("");
   const [yearId, setYearId] = useState("");
+  const [deletingClassId, setDeletingClassId] =
+    useState(null);
 
   const [formValue, setFormValue] = useState({
     subject_id: "",
@@ -579,8 +655,18 @@ export default function AdminClasses() {
   });
 
   const programsQuery = useQuery({
-    queryKey: ["programs", { sort: "name", dir: "asc" }],
-    queryFn: () => listProgramsApi({ sort: "name", dir: "asc" }),
+    queryKey: [
+      "programs",
+      {
+        sort: "name",
+        dir: "asc",
+      },
+    ],
+    queryFn: () =>
+      listProgramsApi({
+        sort: "name",
+        dir: "asc",
+      }),
     retry: false,
   });
 
@@ -603,7 +689,12 @@ export default function AdminClasses() {
   });
 
   const subjectsQuery = useQuery({
-    queryKey: ["subjects-admin", { program: programId }],
+    queryKey: [
+      "subjects-admin",
+      {
+        program: programId,
+      },
+    ],
     queryFn: () =>
       listSubjectsAdminApi({
         program: programId || undefined,
@@ -615,7 +706,12 @@ export default function AdminClasses() {
   });
 
   const periodsQuery = useQuery({
-    queryKey: ["periods", { school_year_id: yearId }],
+    queryKey: [
+      "periods",
+      {
+        school_year_id: yearId,
+      },
+    ],
     queryFn: () =>
       listPeriodsAdminApi({
         school_year_id: yearId || undefined,
@@ -627,14 +723,23 @@ export default function AdminClasses() {
   const createMutation = useMutation({
     mutationFn: createClassAdminApi,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classes-admin"] });
+      queryClient.invalidateQueries({
+        queryKey: ["classes-admin"],
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteClassAdminApi,
+
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["classes-admin"] });
+      queryClient.invalidateQueries({
+        queryKey: ["classes-admin"],
+      });
+    },
+
+    onSettled: () => {
+      setDeletingClassId(null);
     },
   });
 
@@ -663,7 +768,10 @@ export default function AdminClasses() {
     yearsQuery.isError ||
     classesQuery.isError;
 
-  const isBusy = createMutation.isPending || deleteMutation.isPending;
+  const isBusy =
+    createMutation.isPending ||
+    deleteMutation.isPending;
+
   const canCreate =
     Boolean(formValue.subject_id) &&
     Boolean(formValue.teacher_id) &&
@@ -703,6 +811,10 @@ export default function AdminClasses() {
   };
 
   const handleCloseCreate = () => {
+    if (createMutation.isPending) {
+      return;
+    }
+
     setCreateOpen(false);
     resetCreate();
   };
@@ -723,163 +835,217 @@ export default function AdminClasses() {
       subject_id: formValue.subject_id,
       teacher_id: formValue.teacher_id,
       name: formValue.name.trim(),
-      classroom_id: formValue.classroom_id || undefined,
-      start_period_id: formValue.start_period_id || undefined,
-      end_period_id: formValue.end_period_id || undefined,
+      classroom_id:
+        formValue.classroom_id || undefined,
+      start_period_id:
+        formValue.start_period_id || undefined,
+      end_period_id:
+        formValue.end_period_id || undefined,
     });
-
-    resetCreate();
   };
 
   const handleDeleteClass = async (classItem) => {
-    if (!window.confirm(`Delete class "${classItem.name}"?`)) {
+    const confirmed = window.confirm(
+      `Delete class "${classItem.name}"?`
+    );
+
+    if (!confirmed) {
       return;
     }
 
-    await deleteMutation.mutateAsync(classItem.id);
+    setDeletingClassId(String(classItem.id));
+
+    try {
+      await deleteMutation.mutateAsync(classItem.id);
+    } catch (error) {
+      window.alert(
+        error?.response?.data?.message ||
+          error?.message ||
+          "Could not delete this class."
+      );
+    }
   };
 
   if (isLoading) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-slate-500">Loading classes...</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <p className="text-sm text-slate-500">
+          Loading classes...
+        </p>
       </main>
     );
   }
 
   if (isError) {
     return (
-      <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-        <section className="grid h-full min-h-0 place-items-center rounded-2xl border border-red-200 bg-red-50 p-3 shadow-sm sm:p-4">
-          <p className="text-sm text-red-600">Error loading classes.</p>
-        </section>
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">
+            Error loading classes.
+          </p>
+        </div>
       </main>
     );
   }
 
   return (
-    <main className="h-full min-h-0 overflow-hidden bg-slate-50">
-      <section className="grid h-full min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-3 rounded-2xl bg-white p-3 shadow-sm sm:p-4">
-        <header className="min-h-0 rounded-2xl border border-slate-200 bg-slate-50/70 p-3">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-            <div className="min-w-0">
-              <div className="flex items-center justify-between gap-3 sm:justify-start">
-                <h1 className="truncate text-base font-semibold text-slate-900">
-                  Classes
-                </h1>
+    <main className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+      {/* Header fix */}
+      <header className="relative shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(148,163,184,0.14),transparent_34%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_30%)]" />
 
-                <span className="shrink-0 rounded-full border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-600">
-                  {classes.length} configured
-                </span>
-              </div>
+        <div className="relative flex min-h-[112px] flex-col justify-center gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+          <div>
+            <p className="text-xs font-medium text-slate-400">
+              {classes.length} configured
+            </p>
 
-              <p className="mt-1 line-clamp-1 text-xs text-slate-500 sm:text-sm">
-                Assign subjects to teachers and optionally connect classes to classrooms and periods.
-              </p>
-            </div>
+            <h1 className="mt-2 text-2xl font-semibold leading-none tracking-tight text-white">
+              Classes
+            </h1>
 
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-[auto_auto_auto]">
-              <div className="rounded-xl border border-sky-200 bg-sky-50 px-3 py-2">
-                <div className="text-[11px] font-semibold text-sky-700">
-                  Teachers
-                </div>
-
-                <div className="mt-0.5 text-sm font-semibold text-slate-900">
-                  {teachers.length}
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2">
-                <div className="text-[11px] font-semibold text-emerald-700">
-                  Programs
-                </div>
-
-                <div className="mt-0.5 text-sm font-semibold text-slate-900">
-                  {programs.length}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleOpenCreate}
-                disabled={isBusy}
-                className="col-span-2 flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300 sm:col-span-1"
-              >
-                <PlusIcon className="h-4 w-4" />
-                Create class
-              </button>
-            </div>
+            <p className="mt-2 max-w-2xl text-sm text-slate-400">
+              Assign subjects to teachers and optionally connect
+              classes to classrooms and periods.
+            </p>
           </div>
-        </header>
 
-        <div className="min-h-0 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-sm [scrollbar-gutter:stable]">
+          <button
+            type="button"
+            onClick={handleOpenCreate}
+            disabled={isBusy}
+            className={[
+              "inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-slate-950 transition",
+              "sm:w-auto sm:min-w-[140px]",
+              "hover:bg-slate-100",
+              "focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2 focus:ring-offset-slate-950",
+              "disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400",
+            ].join(" ")}
+          >
+            <Plus className="h-4 w-4" strokeWidth={2} />
+            Create
+          </button>
+        </div>
+      </header>
+
+      {/* Informații fixe */}
+      <div className="flex shrink-0 flex-wrap items-center gap-3 bg-transparent px-4 py-5 text-sm sm:px-6 lg:px-8">
+        <span className="text-slate-500">
+          Teachers:
+        </span>
+
+        <span className="font-semibold text-slate-900">
+          {teachers.length}
+        </span>
+
+        <span
+          aria-hidden="true"
+          className="h-4 border-l border-slate-300"
+        />
+
+        <span className="text-slate-500">
+          Programs:
+        </span>
+
+        <span className="font-semibold text-slate-900">
+          {programs.length}
+        </span>
+
+        <span
+          aria-hidden="true"
+          className="h-4 border-l border-slate-300"
+        />
+
+        <span className="text-slate-500">
+          Classrooms:
+        </span>
+
+        <span className="font-semibold text-slate-900">
+          {classrooms.length}
+        </span>
+      </div>
+
+      {/* Doar lista are scroll */}
+      <section className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden bg-transparent [scrollbar-gutter:stable]">
+        <div className="space-y-3 bg-transparent px-4 pb-8 pt-1 sm:px-6 lg:px-8">
           {classesQuery.isFetching && (
-            <div className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-xs text-slate-500">
+            <p className="text-xs text-slate-400">
               Refreshing classes...
-            </div>
+            </p>
           )}
 
           {!classes.length && (
-            <div className="grid h-full min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center">
+            <div className="grid min-h-[240px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-6 text-center">
               <div>
                 <p className="text-sm font-semibold text-slate-900">
                   No classes yet
                 </p>
 
                 <p className="mt-1 max-w-sm text-sm text-slate-500">
-                  Create a class by assigning a subject and a teacher.
+                  Create a class by assigning a subject and a
+                  teacher.
                 </p>
 
                 <button
                   type="button"
                   onClick={handleOpenCreate}
                   disabled={isBusy}
-                  className="mt-4 rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
                 >
+                  <Plus
+                    className="h-4 w-4"
+                    strokeWidth={2}
+                  />
                   Create class
                 </button>
               </div>
             </div>
           )}
 
-          {!!classes.length && (
-            <div className="space-y-2">
-              {classes.map((classItem) => (
-                <ClassCard
-                  key={classItem.id}
-                  classItem={classItem}
-                  isBusy={isBusy}
-                  onDelete={() => handleDeleteClass(classItem)}
-                />
-              ))}
-            </div>
-          )}
+          {classes.map((classItem) => (
+            <ClassCard
+              key={classItem.id}
+              classItem={classItem}
+              isBusy={isBusy}
+              isDeleting={
+                deleteMutation.isPending &&
+                deletingClassId === String(classItem.id)
+              }
+              onDelete={() =>
+                handleDeleteClass(classItem)
+              }
+            />
+          ))}
         </div>
-
-        <ClassModal
-          isOpen={createOpen}
-          programs={programs}
-          subjects={subjects}
-          teachers={teachers}
-          classrooms={classrooms}
-          years={years}
-          periods={periods}
-          programId={programId}
-          yearId={yearId}
-          formValue={formValue}
-          isSaving={createMutation.isPending}
-          isSubjectsLoading={subjectsQuery.isLoading}
-          isPeriodsLoading={periodsQuery.isLoading}
-          canCreate={canCreate}
-          onClose={handleCloseCreate}
-          onProgramChange={setProgramId}
-          onYearChange={setYearId}
-          onFormChange={handleFormChange}
-          onSave={handleCreateClass}
-        />
       </section>
+
+      <ClassModal
+        isOpen={createOpen}
+        programs={programs}
+        subjects={subjects}
+        teachers={teachers}
+        classrooms={classrooms}
+        years={years}
+        periods={periods}
+        programId={programId}
+        yearId={yearId}
+        formValue={formValue}
+        isSaving={createMutation.isPending}
+        isSubjectsLoading={
+          subjectsQuery.isLoading ||
+          subjectsQuery.isFetching
+        }
+        isPeriodsLoading={
+          periodsQuery.isLoading ||
+          periodsQuery.isFetching
+        }
+        canCreate={canCreate}
+        onClose={handleCloseCreate}
+        onProgramChange={setProgramId}
+        onYearChange={setYearId}
+        onFormChange={handleFormChange}
+        onSave={handleCreateClass}
+      />
     </main>
   );
 }

@@ -240,17 +240,19 @@ export default function WelcomePage({ onLogin }) {
       className="h-screen overflow-y-auto bg-slate-50 text-slate-950"
     >
       <header
-        className={`fixed left-0 top-0 z-50 h-20 w-full border-b border-slate-200 bg-white/95 text-slate-950 shadow-sm backdrop-blur transition-all duration-300 ease-in-out ${
-          headerIsHidden ? "-translate-y-20" : "translate-y-0"
-        }`}
+        className={`fixed left-0 top-0 z-50 h-16 w-full border-b border-slate-200 bg-[#111111] text-slate-950 shadow-sm backdrop-blur transition-all duration-300 ease-in-out ${headerIsHidden ? "-translate-y-16" : "translate-y-0"
+          }`}
         onMouseLeave={() => setMenuOpen(false)}
       >
-        <div className="mx-auto flex h-full w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="flex h-full w-full  items-center justify-between px-[2.5vw] ">
           <Link
             to="/"
-            className="text-base font-bold tracking-tight text-slate-950"
+            className="flex gap-2 justify-center items-center"
           >
-            KmScope
+            <img src="logo-dark.svg" className="h-10 w-10" />
+            <span className="text-lg font-semibold tracking-tight text-white h-fit">
+              KmScope
+            </span>
           </Link>
 
           <nav className="hidden h-full items-center gap-1 text-sm md:flex">
@@ -291,11 +293,10 @@ export default function WelcomePage({ onLogin }) {
         </div>
 
         <div
-          className={`absolute left-0 top-20 w-full border-b border-slate-200 bg-white text-slate-950 shadow-lg transition-[max-height,opacity] duration-300 ${
-            menuOpen
-              ? "max-h-[calc(100vh-80px)] overflow-y-auto opacity-100 md:max-h-[420px]"
-              : "max-h-0 overflow-hidden opacity-0"
-          }`}
+          className={`absolute left-0 top-20 w-full border-b border-slate-200 bg-white text-slate-950 shadow-lg transition-[max-height,opacity] duration-300 ${menuOpen
+            ? "max-h-[calc(100vh-80px)] overflow-y-auto opacity-100 md:max-h-[420px]"
+            : "max-h-0 overflow-hidden opacity-0"
+            }`}
         >
           <div className="mx-auto grid w-full max-w-7xl gap-4 px-4 py-5 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8 lg:py-6">
             {dropdownItems.map((item) => (

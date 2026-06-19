@@ -1,7 +1,4 @@
-import { useNavigate } from "react-router-dom";
-import { CircleArrowLeft } from 'lucide-react';
-
-
+ 
 import { useProjectShell } from "../context/ProjectShellContext";
 import ProjectSidebar from "./ProjectSidebar";
 

@@ -1,10 +1,29 @@
-import React, { useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import React, {
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+} from "react-router-dom";
 import {
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+import {
+  ArrowLeft,
+  BarChart3,
+  FolderKanban,
+  Loader2,
+  Pencil,
+  Plus,
+  Trash2,
+  Users,
+  X,
+} from "lucide-react";
 
 import {
   listTeacherProjectsApi,
@@ -13,285 +32,603 @@ import {
   deleteTeacherProjectApi,
 } from "../api/teacher";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+const DUMMY_PROJECTS = [];
 
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+const STATUS_STYLES = {
+  active:
+    "border-emerald-200 bg-emerald-50 text-emerald-700",
+  draft:
+    "border-slate-200 bg-slate-50 text-slate-600",
+  review:
+    "border-amber-200 bg-amber-50 text-amber-700",
+  archived:
+    "border-slate-300 bg-slate-100 text-slate-500",
+};
 
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+function getApiMessage(error, fallback) {
+  return (
+    error?.response?.data?.message ||
+    error?.message ||
+    fallback
+  );
+}
 
-import {
-  ArrowLeft,
-  FolderKanban,
-  Pencil,
-  Trash2,
-  Plus,
-  Users,
-} from "lucide-react";
+function extractProjects(data) {
+  if (Array.isArray(data)) {
+    return data;
+  }
 
-const DUMMY_PROJECTS = [
-  // {
-  //   id: "demo-1",
-  //   name: "Argument Mapping Basics",
-  //   status: "active",
-  //   members_count: 4,
-  //   updated_at: "2026-03-09",
-  // },
-  // {
-  //   id: "demo-2",
-  //   name: "Ethics Review Project",
-  //   status: "review",
-  //   members_count: 3,
-  //   updated_at: "2026-03-08",
-  // },
-  // {
-  //   id: "demo-3",
-  //   name: "Climate Debate Graph",
-  //   status: "draft",
-  //   members_count: 5,
-  //   updated_at: "2026-03-06",
-  // },
-  // {
-  //   id: "demo-4",
-  //   name: "Research Notes Cluster",
-  //   status: "active",
-  //   members_count: 2,
-  //   updated_at: "2026-03-05",
-  // },
-  // {
-  //   id: "demo-5",
-  //   name: "Logic Trees Workshop",
-  //   status: "active",
-  //   members_count: 6,
-  //   updated_at: "2026-03-04",
-  // },
-  // {
-  //   id: "demo-6",
-  //   name: "Peer Review Sandbox",
-  //   status: "review",
-  //   members_count: 7,
-  //   updated_at: "2026-03-03",
-  // },
-  // {
-  //   id: "demo-7",
-  //   name: "Critical Thinking Lab",
-  //   status: "draft",
-  //   members_count: 4,
-  //   updated_at: "2026-03-02",
-  // },
-  // {
-  //   id: "demo-8",
-  //   name: "Debate Graph Sprint",
-  //   status: "active",
-  //   members_count: 5,
-  //   updated_at: "2026-03-01",
-  // },
-  // {
-  //   id: "demo-9",
-  //   name: "Knowledge Map Studio",
-  //   status: "archived",
-  //   members_count: 3,
-  //   updated_at: "2026-02-28",
-  // },
-  // {
-  //   id: "demo-10",
-  //   name: "Review Queue Practice",
-  //   status: "active",
-  //   members_count: 8,
-  //   updated_at: "2026-02-27",
-  // },
-  // {
-  //   id: "demo-11",
-  //   name: "Argument Analysis Workshop",
-  //   status: "review",
-  //   members_count: 4,
-  //   updated_at: "2026-02-26",
+  if (Array.isArray(data?.projects)) {
+    return data.projects;
+  }
 
-  // }
-  // ,
-  // {
-  //   id: "demo-12",
-  //   name: "Logic Puzzle Challenge",
-  //   status: "draft",
-  //   members_count: 6,
-  //   updated_at: "2026-02-25",
-  // },
-];
+  return [];
+}
 
 function normalizeProjects(data) {
-  if (!Array.isArray(data)) return [];
+  return extractProjects(data).map(
+    (project, index) => ({
+      id:
+        project.id ??
+        `project-${index}`,
 
-  return data.map((p, index) => ({
-    id: p.id ?? `project-${index}`,
-    name: p.name ?? "Untitled project",
-    status: p.status ?? "active",
-    members_count: p.members_count ?? p.members?.length ?? 0,
-    updated_at: p.updated_at ?? null,
-    raw: p,
-    isDummy: false,
-  }));
+      name:
+        project.name ??
+        "Untitled project",
+
+      status:
+        project.status ??
+        "active",
+
+      members_count:
+        project.members_count ??
+        project.members?.length ??
+        0,
+
+      updated_at:
+        project.updated_at ??
+        null,
+
+      raw: project,
+      isDummy: false,
+    })
+  );
 }
 
 function normalizeDummyProjects(data) {
-  return data.map((p) => ({
-    ...p,
+  return data.map((project) => ({
+    ...project,
     isDummy: true,
   }));
 }
 
-function statusLabel(status) {
+function getStatusLabel(status) {
   switch (status) {
     case "draft":
       return "Draft";
+
     case "review":
       return "Review";
+
     case "archived":
       return "Archived";
+
     case "active":
     default:
       return "Active";
   }
 }
 
-function statusClassName(status) {
-  switch (status) {
-    case "draft":
-      return "border-neutral-300 text-neutral-700";
-    case "review":
-      return "border-amber-400 text-amber-700";
-    case "archived":
-      return "border-neutral-400 text-neutral-500";
-    case "active":
-    default:
-      return "border-green-600/30 text-green-700";
+function getStatusClassName(status) {
+  return (
+    STATUS_STYLES[status] ||
+    STATUS_STYLES.active
+  );
+}
+
+function formatDate(value) {
+  if (!value) {
+    return null;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return String(value);
+  }
+
+  try {
+    return new Intl.DateTimeFormat(
+      undefined,
+      {
+        dateStyle: "medium",
+      }
+    ).format(date);
+  } catch {
+    return String(value);
   }
 }
 
-function StatCard({ label, value }) {
+function useModalLifecycle({
+  open,
+  isBusy,
+  onClose,
+}) {
+  useEffect(() => {
+    if (!open) {
+      return undefined;
+    }
+
+    const previousOverflow =
+      document.body.style.overflow;
+
+    document.body.style.overflow =
+      "hidden";
+
+    const handleKeyDown = (event) => {
+      if (
+        event.key === "Escape" &&
+        !isBusy
+      ) {
+        onClose?.();
+      }
+    };
+
+    document.addEventListener(
+      "keydown",
+      handleKeyDown
+    );
+
+    return () => {
+      document.body.style.overflow =
+        previousOverflow;
+
+      document.removeEventListener(
+        "keydown",
+        handleKeyDown
+      );
+    };
+  }, [open, isBusy, onClose]);
+}
+
+function StatItem({
+  label,
+  value,
+  icon: Icon,
+}) {
   return (
-    <Card className="w-[124px] rounded-none">
-      <CardContent className="px-2.5 py-1.5">
-        <p className="text-[9px] uppercase tracking-[0.12em] text-muted-foreground">
+    <div className="flex min-w-0 items-center gap-3">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-500">
+        <Icon
+          className="h-4 w-4"
+          strokeWidth={1.8}
+        />
+      </div>
+
+      <div className="min-w-0">
+        <p className="text-xs text-slate-500">
           {label}
         </p>
-        <p className="mt-0.5 text-base font-semibold leading-none">{value}</p>
-      </CardContent>
-    </Card>
+
+        <p className="mt-0.5 text-sm font-semibold text-slate-950">
+          {value}
+        </p>
+      </div>
+    </div>
   );
 }
 
 function ProjectRow({
   project,
   classId,
-  index,
+  isBusy,
+  isRenaming,
+  isDeleting,
   onRename,
   onDelete,
-  renameBusy,
-  deleteBusy,
 }) {
+  const updatedAt = formatDate(
+    project.updated_at
+  );
+
+  return (
+    <article className="grid grid-cols-1 gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-5 transition-colors hover:border-slate-300 sm:px-6 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+      <div className="flex min-w-0 items-start gap-4">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-sky-200 bg-sky-50 text-sky-700">
+          <FolderKanban
+            className="h-5 w-5"
+            strokeWidth={1.8}
+          />
+        </div>
+
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-base font-medium text-slate-950">
+              {project.name}
+            </h2>
+
+            <span
+              className={[
+                "inline-flex rounded-full border px-2.5 py-1 text-[11px] font-semibold",
+                getStatusClassName(
+                  project.status
+                ),
+              ].join(" ")}
+            >
+              {getStatusLabel(
+                project.status
+              )}
+            </span>
+
+            {project.isDummy && (
+              <span className="inline-flex rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[11px] font-semibold text-slate-500">
+                Demo
+              </span>
+            )}
+          </div>
+
+          <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-slate-500">
+            <span className="inline-flex items-center gap-1.5">
+              <Users
+                className="h-3.5 w-3.5"
+                strokeWidth={1.8}
+              />
+
+              {project.members_count}{" "}
+              {project.members_count === 1
+                ? "member"
+                : "members"}
+            </span>
+
+            {updatedAt && (
+              <span>
+                Updated {updatedAt}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Link
+          to={`/dashboard/teacher/classes/${classId}/projects/${project.id}`}
+          className="inline-flex h-10 items-center justify-center rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800"
+        >
+          Open
+        </Link>
+
+        {project.isDummy ? (
+          <span className="inline-flex h-10 cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-slate-200 bg-slate-100 px-4 text-sm font-medium text-slate-400">
+            <BarChart3
+              className="h-4 w-4"
+              strokeWidth={1.8}
+            />
+            Performance
+          </span>
+        ) : (
+          <Link
+            to={`/dashboard/teacher/classes/${classId}/projects/${project.id}/performance`}
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-950"
+          >
+            <BarChart3
+              className="h-4 w-4"
+              strokeWidth={1.8}
+            />
+            Performance
+          </Link>
+        )}
+
+        <button
+          type="button"
+          onClick={() =>
+            onRename(project)
+          }
+          disabled={
+            isBusy ||
+            project.isDummy
+          }
+          aria-label={`Rename ${project.name}`}
+          title={`Rename ${project.name}`}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-950 disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          {isRenaming ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Pencil
+              className="h-4 w-4"
+              strokeWidth={1.8}
+            />
+          )}
+        </button>
+
+        <button
+          type="button"
+          onClick={() =>
+            onDelete(project)
+          }
+          disabled={
+            isBusy ||
+            project.isDummy
+          }
+          aria-label={`Delete ${project.name}`}
+          title={`Delete ${project.name}`}
+          className="inline-flex h-10 w-10 items-center justify-center rounded-full text-red-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-35"
+        >
+          {isDeleting ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Trash2
+              className="h-4 w-4"
+              strokeWidth={1.8}
+            />
+          )}
+        </button>
+      </div>
+    </article>
+  );
+}
+
+function ProjectFormModal({
+  open,
+  mode,
+  value,
+  error,
+  isSaving,
+  onValueChange,
+  onClose,
+  onSubmit,
+}) {
+  useModalLifecycle({
+    open,
+    isBusy: isSaving,
+    onClose,
+  });
+
+  if (!open) {
+    return null;
+  }
+
+  const isRename =
+    mode === "rename";
+
+  const title = isRename
+    ? "Rename project"
+    : "Create project";
+
+  const description = isRename
+    ? "Update the project name."
+    : "Add a new project to this class.";
+
   return (
     <div
-      className="animate-in fade-in slide-in-from-top-2 px-3 py-1.5 duration-300"
-      style={{
-        animationDelay: `${index * 30}ms`,
-        animationFillMode: "both",
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onMouseDown={() => {
+        if (!isSaving) {
+          onClose?.();
+        }
       }}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <FolderKanban className="h-3.5 w-3.5 text-muted-foreground" />
-            <p className="truncate text-[13px] font-medium leading-tight">
-              {project.name}
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        onMouseDown={(event) =>
+          event.stopPropagation()
+        }
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-slate-950 text-white">
+              {isRename ? (
+                <Pencil
+                  className="h-4 w-4"
+                  strokeWidth={1.8}
+                />
+              ) : (
+                <FolderKanban
+                  className="h-4 w-4"
+                  strokeWidth={1.8}
+                />
+              )}
+            </div>
+
+            <h2 className="text-lg font-semibold text-slate-900">
+              {title}
+            </h2>
+
+            <p className="mt-1 text-sm text-slate-500">
+              {description}
             </p>
           </div>
 
-          <div className="mt-0.5 flex flex-wrap items-center gap-2 text-[10px] text-muted-foreground">
-            <Badge
-              variant="outline"
-              className={`h-4 rounded-none px-1.5 text-[9px] ${statusClassName(project.status)}`}
-            >
-              {statusLabel(project.status)}
-            </Badge>
-
-            <span className="inline-flex items-center gap-1">
-              <Users className="h-3 w-3" />
-              {project.members_count}
-            </span>
-
-            {project.updated_at ? <span>{project.updated_at}</span> : null}
-
-            {project.isDummy ? (
-              <Badge
-                variant="outline"
-                className="h-4 rounded-none px-1.5 text-[9px]"
-              >
-                demo
-              </Badge>
-            ) : null}
-          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isSaving}
+            aria-label="Close modal"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X
+              className="h-5 w-5"
+              strokeWidth={1.8}
+            />
+          </button>
         </div>
 
-        <div className="flex shrink-0 items-center gap-1">
-          <Button asChild size="sm" className="h-6 rounded-none px-2 text-[10px]">
-            <Link to={`/dashboard/teacher/classes/${classId}/projects/${project.id}`}>
-              Open
-            </Link>
-          </Button>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault();
+            onSubmit?.();
+          }}
+        >
+          <label
+            htmlFor={`${mode}-project-name`}
+            className="mb-1.5 block text-sm font-medium text-slate-700"
+          >
+            Project name
+          </label>
 
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-6 rounded-none px-2 text-[10px]"
-            disabled={project.isDummy}
-          >
-            <Link to={`/dashboard/teacher/classes/${classId}/projects/${project.id}/performance`}>
-              📊 Performance
-            </Link>
-          </Button>
-          
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 rounded-none px-2 text-[10px]"
-            disabled={renameBusy || project.isDummy}
-            onClick={() => onRename(project)}
-          >
-            <Pencil className="mr-1 h-3 w-3" />
-            Rename
-          </Button>
+          <input
+            id={`${mode}-project-name`}
+            value={value}
+            onChange={(event) =>
+              onValueChange(
+                event.target.value
+              )
+            }
+            disabled={isSaving}
+            autoFocus
+            placeholder="Enter project name"
+            className="h-10 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none transition focus:border-slate-300 focus:ring-2 focus:ring-slate-100 disabled:cursor-not-allowed disabled:bg-slate-50"
+          />
 
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-6 rounded-none px-2 text-[10px]"
-            disabled={deleteBusy || project.isDummy}
-            onClick={() => onDelete(project)}
+          {error && (
+            <div className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          <div className="mt-6 grid gap-2 sm:grid-cols-2">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isSaving}
+              className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Cancel
+            </button>
+
+            <button
+              type="submit"
+              disabled={
+                isSaving ||
+                !value.trim()
+              }
+              className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+            >
+              {isSaving && (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              )}
+
+              {isSaving
+                ? isRename
+                  ? "Saving..."
+                  : "Creating..."
+                : isRename
+                  ? "Save changes"
+                  : "Create project"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+function DeleteProjectModal({
+  open,
+  project,
+  error,
+  isDeleting,
+  onClose,
+  onConfirm,
+}) {
+  useModalLifecycle({
+    open,
+    isBusy: isDeleting,
+    onClose,
+  });
+
+  if (!open) {
+    return null;
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 p-4"
+      role="alertdialog"
+      aria-modal="true"
+      aria-label="Delete project"
+      onMouseDown={() => {
+        if (!isDeleting) {
+          onClose?.();
+        }
+      }}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
+        onMouseDown={(event) =>
+          event.stopPropagation()
+        }
+      >
+        <div className="mb-5 flex items-start justify-between gap-4">
+          <div>
+            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-xl bg-red-50 text-red-600">
+              <Trash2
+                className="h-4 w-4"
+                strokeWidth={1.8}
+              />
+            </div>
+
+            <h2 className="text-lg font-semibold text-slate-900">
+              Delete project?
+            </h2>
+
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              {project
+                ? `This will permanently delete “${project.name}”.`
+                : "This action cannot be undone."}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            aria-label="Close modal"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-500 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            <Trash2 className="mr-1 h-3 w-3" />
-            Delete
-          </Button>
+            <X
+              className="h-5 w-5"
+              strokeWidth={1.8}
+            />
+          </button>
+        </div>
+
+        {error && (
+          <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isDeleting}
+            className="inline-flex h-10 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={
+              isDeleting ||
+              !project
+            }
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-300"
+          >
+            {isDeleting && (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            )}
+
+            {isDeleting
+              ? "Deleting..."
+              : "Delete project"}
+          </button>
         </div>
       </div>
     </div>
@@ -301,294 +638,558 @@ function ProjectRow({
 export default function TeacherProjects() {
   const { classId } = useParams();
   const navigate = useNavigate();
-  const qc = useQueryClient();
+  const queryClient =
+    useQueryClient();
 
-  const [createOpen, setCreateOpen] = useState(false);
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [createOpen, setCreateOpen] =
+    useState(false);
 
-  const [name, setName] = useState("");
-  const [renameValue, setRenameValue] = useState("");
-  const [selectedProject, setSelectedProject] = useState(null);
+  const [renameOpen, setRenameOpen] =
+    useState(false);
 
-  const q = useQuery({
-    queryKey: ["teacher-projects", classId],
-    queryFn: () => listTeacherProjectsApi(classId),
-    retry: 0,
+  const [deleteOpen, setDeleteOpen] =
+    useState(false);
+
+  const [name, setName] =
+    useState("");
+
+  const [
+    renameValue,
+    setRenameValue,
+  ] = useState("");
+
+  const [
+    selectedProject,
+    setSelectedProject,
+  ] = useState(null);
+
+  const [
+    createError,
+    setCreateError,
+  ] = useState("");
+
+  const [
+    renameError,
+    setRenameError,
+  ] = useState("");
+
+  const [
+    deleteError,
+    setDeleteError,
+  ] = useState("");
+
+  const projectsQuery = useQuery({
+    queryKey: [
+      "teacher-projects",
+      classId,
+    ],
+
+    queryFn: () =>
+      listTeacherProjectsApi(classId),
+
+    enabled: Boolean(classId),
+    retry: false,
   });
 
-  const createM = useMutation({
-    mutationFn: (body) => createTeacherProjectApi(classId, body),
+  const createMutation = useMutation({
+    mutationFn: (body) =>
+      createTeacherProjectApi(
+        classId,
+        body
+      ),
+
     onSuccess: () => {
-      setName("");
-      setCreateOpen(false);
-      qc.invalidateQueries({ queryKey: ["teacher-projects", classId] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "teacher-projects",
+          classId,
+        ],
+      });
     },
   });
 
-  const updateM = useMutation({
-    mutationFn: ({ pid, body }) => updateTeacherProjectApi(pid, body),
+  const updateMutation = useMutation({
+    mutationFn: ({ projectId, body }) =>
+      updateTeacherProjectApi(
+        projectId,
+        body
+      ),
+
     onSuccess: () => {
-      setRenameOpen(false);
-      setSelectedProject(null);
-      setRenameValue("");
-      qc.invalidateQueries({ queryKey: ["teacher-projects", classId] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "teacher-projects",
+          classId,
+        ],
+      });
     },
   });
 
-  const deleteM = useMutation({
-    mutationFn: deleteTeacherProjectApi,
+  const deleteMutation = useMutation({
+    mutationFn:
+      deleteTeacherProjectApi,
+
     onSuccess: () => {
-      setDeleteOpen(false);
-      setSelectedProject(null);
-      qc.invalidateQueries({ queryKey: ["teacher-projects", classId] });
+      queryClient.invalidateQueries({
+        queryKey: [
+          "teacher-projects",
+          classId,
+        ],
+      });
     },
   });
 
-  const apiProjects = useMemo(() => normalizeProjects(q.data), [q.data]);
+  const apiProjects = useMemo(
+    () =>
+      normalizeProjects(
+        projectsQuery.data
+      ),
+    [projectsQuery.data]
+  );
 
   const projects = useMemo(() => {
-    const dummy = normalizeDummyProjects(DUMMY_PROJECTS);
-    return [...apiProjects, ...dummy];
+    const dummyProjects =
+      normalizeDummyProjects(
+        DUMMY_PROJECTS
+      );
+
+    return [
+      ...apiProjects,
+      ...dummyProjects,
+    ];
   }, [apiProjects]);
 
-  const handleCreate = () => {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    createM.mutate({ name: trimmed });
+  const totalProjects =
+    projects.length;
+
+  const activeProjects =
+    projects.filter(
+      (project) =>
+        project.status === "active"
+    ).length;
+
+  const totalMembers =
+    projects.reduce(
+      (total, project) =>
+        total +
+        (project.members_count || 0),
+      0
+    );
+
+  const isBusy =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    deleteMutation.isPending;
+
+  const handleOpenCreate = () => {
+    createMutation.reset();
+    setCreateError("");
+    setName("");
+    setCreateOpen(true);
   };
 
-  const openRenameDialog = (project) => {
-    if (project.isDummy) return;
+  const handleCloseCreate = () => {
+    if (createMutation.isPending) {
+      return;
+    }
+
+    setCreateOpen(false);
+    setCreateError("");
+    setName("");
+  };
+
+  const handleCreate = async () => {
+    const trimmedName =
+      name.trim();
+
+    if (!trimmedName) {
+      setCreateError(
+        "Add a project name."
+      );
+      return;
+    }
+
+    try {
+      setCreateError("");
+
+      await createMutation.mutateAsync({
+        name: trimmedName,
+      });
+
+      setName("");
+      setCreateOpen(false);
+    } catch (error) {
+      setCreateError(
+        getApiMessage(
+          error,
+          "Could not create this project."
+        )
+      );
+    }
+  };
+
+  const handleOpenRename = (
+    project
+  ) => {
+    if (project.isDummy) {
+      return;
+    }
+
+    updateMutation.reset();
+    setRenameError("");
     setSelectedProject(project);
     setRenameValue(project.name);
     setRenameOpen(true);
   };
 
-  const handleRename = () => {
-    if (!selectedProject) return;
-
-    const trimmed = renameValue.trim();
-    if (!trimmed || trimmed === selectedProject.name) {
-      setRenameOpen(false);
+  const handleCloseRename = () => {
+    if (updateMutation.isPending) {
       return;
     }
 
-    updateM.mutate({
-      pid: selectedProject.id,
-      body: { name: trimmed },
-    });
+    setRenameOpen(false);
+    setSelectedProject(null);
+    setRenameValue("");
+    setRenameError("");
   };
 
-  const openDeleteDialog = (project) => {
-    if (project.isDummy) return;
+  const handleRename = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    const trimmedName =
+      renameValue.trim();
+
+    if (!trimmedName) {
+      setRenameError(
+        "Add a project name."
+      );
+      return;
+    }
+
+    if (
+      trimmedName ===
+      selectedProject.name
+    ) {
+      handleCloseRename();
+      return;
+    }
+
+    try {
+      setRenameError("");
+
+      await updateMutation.mutateAsync({
+        projectId:
+          selectedProject.id,
+
+        body: {
+          name: trimmedName,
+        },
+      });
+
+      setRenameOpen(false);
+      setSelectedProject(null);
+      setRenameValue("");
+    } catch (error) {
+      setRenameError(
+        getApiMessage(
+          error,
+          "Could not rename this project."
+        )
+      );
+    }
+  };
+
+  const handleOpenDelete = (
+    project
+  ) => {
+    if (project.isDummy) {
+      return;
+    }
+
+    deleteMutation.reset();
+    setDeleteError("");
     setSelectedProject(project);
     setDeleteOpen(true);
   };
 
-  const handleDelete = () => {
-    if (!selectedProject) return;
-    deleteM.mutate(selectedProject.id);
+  const handleCloseDelete = () => {
+    if (deleteMutation.isPending) {
+      return;
+    }
+
+    setDeleteOpen(false);
+    setSelectedProject(null);
+    setDeleteError("");
   };
 
-  const totalProjects = projects.length;
-  const activeProjects = projects.filter((p) => p.status === "active").length;
-  const totalMembers = projects.reduce(
-    (acc, p) => acc + (p.members_count || 0),
-    0
-  );
+  const handleDelete = async () => {
+    if (!selectedProject) {
+      return;
+    }
+
+    try {
+      setDeleteError("");
+
+      await deleteMutation.mutateAsync(
+        selectedProject.id
+      );
+
+      setDeleteOpen(false);
+      setSelectedProject(null);
+    } catch (error) {
+      setDeleteError(
+        getApiMessage(
+          error,
+          "Could not delete this project."
+        )
+      );
+    }
+  };
+
+  if (
+    projectsQuery.isLoading &&
+    !projects.length
+  ) {
+    return (
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <div className="flex items-center gap-2 text-sm text-slate-500">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Loading projects...
+        </div>
+      </main>
+    );
+  }
+
+  if (projectsQuery.isError) {
+    return (
+      <main className="grid h-full min-h-0 w-full place-items-center bg-transparent">
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <p className="text-sm text-red-600">
+            Error loading projects.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <>
-      <div className="flex flex-col gap-2 overflow-hidden">
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="h-7 rounded-none px-2.5 text-[11px]"
-            onClick={() => navigate(-1)}
-          >
-            <ArrowLeft className="mr-1 h-3 w-3" />
-            Back
-          </Button>
+      <main className="flex h-full min-h-0 w-full flex-col overflow-hidden bg-transparent">
+        <header className="relative shrink-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white">
+          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(148,163,184,0.14),transparent_34%),radial-gradient(circle_at_90%_0%,rgba(255,255,255,0.08),transparent_30%)]" />
 
-          <div>
-            <h1 className="text-lg font-semibold leading-none">Projects</h1>
-            <p className="mt-0.5 text-[11px] text-muted-foreground">
-              Manage projects for class {classId}.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap items-start gap-2">
-          <StatCard label="Projects" value={totalProjects} />
-          <StatCard label="Active" value={activeProjects} />
-          <StatCard label="Members" value={totalMembers} />
-        </div>
-
-        <Card className="flex flex-col overflow-hidden rounded-none">
-          <CardHeader className="border-b px-3 py-1">
-            <div className="flex items-center justify-between gap-2">
-              <CardTitle className="text-[12px] leading-none">
-                Project list
-              </CardTitle>
-
-              <Button
-                className="h-6 rounded-none px-2 text-[10px]"
-                onClick={() => setCreateOpen(true)}
+          <div className="relative flex min-h-[128px] flex-col justify-center gap-5 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div className="min-w-0">
+              <button
+                type="button"
+                onClick={() =>
+                  navigate(-1)
+                }
+                className="inline-flex items-center gap-1.5 text-xs font-medium text-slate-400 transition-colors hover:text-white"
               >
-                <Plus className="mr-1 h-3 w-3" />
-                Create
-              </Button>
+                <ArrowLeft
+                  className="h-4 w-4"
+                  strokeWidth={1.8}
+                />
+                Back to classes
+              </button>
+
+              <h1 className="mt-3 text-2xl font-semibold leading-none tracking-tight text-white">
+                Projects
+              </h1>
+
+              <p className="mt-2 truncate text-sm text-slate-400">
+                Manage projects for class{" "}
+                {classId}.
+              </p>
             </div>
-          </CardHeader>
 
-          <CardContent className="p-0">
-            {q.isLoading ? (
-              <div className="p-3 text-sm text-muted-foreground">
-                Loading projects...
-              </div>
-            ) : !projects.length ? (
-              <div className="p-3 text-sm text-muted-foreground">
-                No projects found.
-              </div>
-            ) : (
-              <ScrollArea className="max-h-[calc(100vh-260px)]">
+            <button
+              type="button"
+              onClick={handleOpenCreate}
+              disabled={isBusy}
+              className={[
+                "inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-white px-5 text-sm font-semibold text-slate-950 transition",
+                "sm:w-auto sm:min-w-[160px]",
+                "hover:bg-slate-100",
+                "focus:outline-none focus:ring-2 focus:ring-slate-300 focus:ring-offset-2 focus:ring-offset-slate-950",
+                "disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400",
+              ].join(" ")}
+            >
+              <Plus
+                className="h-4 w-4"
+                strokeWidth={2}
+              />
+              Create project
+            </button>
+          </div>
+        </header>
+
+        <section className="shrink-0 bg-transparent px-4 py-5 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-3">
+            <StatItem
+              label="Projects"
+              value={totalProjects}
+              icon={FolderKanban}
+            />
+
+            <StatItem
+              label="Active"
+              value={activeProjects}
+              icon={BarChart3}
+            />
+
+            <StatItem
+              label="Members"
+              value={totalMembers}
+              icon={Users}
+            />
+          </div>
+        </section>
+
+        <section className="grid min-h-0 flex-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden bg-transparent">
+          <div className="flex shrink-0 flex-col gap-3 border-b border-slate-200 px-4 pb-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div>
+              <h2 className="text-sm font-semibold text-slate-950">
+                Project list
+              </h2>
+
+              <p className="mt-1 text-xs text-slate-500">
+                Open a project, inspect its performance or manage its settings.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3 text-sm">
+              <span className="text-slate-500">
+                Total:
+              </span>
+
+              <span className="font-semibold text-slate-950">
+                {totalProjects}
+              </span>
+
+              {projectsQuery.isFetching && (
+                <span className="inline-flex items-center gap-2 text-xs text-slate-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  Refreshing...
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="min-h-0 overflow-y-auto overflow-x-hidden px-4 pb-8 pt-4 [scrollbar-gutter:stable] sm:px-6 lg:px-8">
+            {!projects.length && (
+              <div className="grid min-h-[260px] place-items-center rounded-2xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
                 <div>
-                  {projects.map((project, index) => (
-                    <React.Fragment key={project.id}>
-                      <ProjectRow
-                        project={project}
-                        classId={classId}
-                        index={index}
-                        onRename={openRenameDialog}
-                        onDelete={openDeleteDialog}
-                        renameBusy={updateM.isPending}
-                        deleteBusy={deleteM.isPending}
-                      />
-                      {index < projects.length - 1 ? <Separator /> : null}
-                    </React.Fragment>
-                  ))}
+                  <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-400">
+                    <FolderKanban
+                      className="h-5 w-5"
+                      strokeWidth={1.8}
+                    />
+                  </div>
+
+                  <p className="mt-4 text-sm font-semibold text-slate-900">
+                    No projects found
+                  </p>
+
+                  <p className="mt-1 max-w-sm text-sm text-slate-500">
+                    Create the first project for this class.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenCreate}
+                    disabled={isBusy}
+                    className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 text-sm font-semibold text-white transition-colors hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
+                  >
+                    <Plus
+                      className="h-4 w-4"
+                      strokeWidth={2}
+                    />
+                    Create project
+                  </button>
                 </div>
-              </ScrollArea>
+              </div>
             )}
-          </CardContent>
-        </Card>
-      </div>
 
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent className="rounded-none">
-          <DialogHeader className="gap-1">
-            <DialogTitle>Create project</DialogTitle>
-            <DialogDescription>
-              Add a new project for this class.
-            </DialogDescription>
-          </DialogHeader>
-
-          <div className="py-1">
-            <Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Project name"
-              className="rounded-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleCreate();
-              }}
-            />
+            {!!projects.length && (
+              <div className="space-y-3">
+                {projects.map(
+                  (project) => (
+                    <ProjectRow
+                      key={project.id}
+                      project={project}
+                      classId={classId}
+                      isBusy={isBusy}
+                      isRenaming={
+                        updateMutation.isPending &&
+                        selectedProject?.id ===
+                          project.id
+                      }
+                      isDeleting={
+                        deleteMutation.isPending &&
+                        selectedProject?.id ===
+                          project.id
+                      }
+                      onRename={
+                        handleOpenRename
+                      }
+                      onDelete={
+                        handleOpenDelete
+                      }
+                    />
+                  )
+                )}
+              </div>
+            )}
           </div>
+        </section>
+      </main>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-none"
-              onClick={() => setCreateOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="rounded-none"
-              onClick={handleCreate}
-              disabled={createM.isPending}
-            >
-              {createM.isPending ? "Creating..." : "Create"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog
-        open={renameOpen}
-        onOpenChange={(open) => {
-          setRenameOpen(open);
-          if (!open) {
-            setSelectedProject(null);
-            setRenameValue("");
-          }
+      <ProjectFormModal
+        open={createOpen}
+        mode="create"
+        value={name}
+        error={createError}
+        isSaving={
+          createMutation.isPending
+        }
+        onValueChange={(value) => {
+          setName(value);
+          setCreateError("");
         }}
-      >
-        <DialogContent className="rounded-none">
-          <DialogHeader className="gap-1">
-            <DialogTitle>Rename project</DialogTitle>
-            <DialogDescription>
-              Update the project name.
-            </DialogDescription>
-          </DialogHeader>
+        onClose={handleCloseCreate}
+        onSubmit={handleCreate}
+      />
 
-          <div className="py-1">
-            <Input
-              value={renameValue}
-              onChange={(e) => setRenameValue(e.target.value)}
-              placeholder="Project name"
-              className="rounded-none"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") handleRename();
-              }}
-            />
-          </div>
+      <ProjectFormModal
+        open={renameOpen}
+        mode="rename"
+        value={renameValue}
+        error={renameError}
+        isSaving={
+          updateMutation.isPending
+        }
+        onValueChange={(value) => {
+          setRenameValue(value);
+          setRenameError("");
+        }}
+        onClose={handleCloseRename}
+        onSubmit={handleRename}
+      />
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="rounded-none"
-              onClick={() => setRenameOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="rounded-none"
-              onClick={handleRename}
-              disabled={updateM.isPending}
-            >
-              {updateM.isPending ? "Saving..." : "Save"}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
-        <AlertDialogContent className="rounded-none">
-          <AlertDialogHeader className="gap-1">
-            <AlertDialogTitle>Delete project?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {selectedProject
-                ? `This will permanently delete "${selectedProject.name}".`
-                : "This action cannot be undone."}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-
-          <AlertDialogFooter>
-            <AlertDialogCancel className="rounded-none">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              className="rounded-none"
-              onClick={handleDelete}
-              disabled={deleteM.isPending}
-            >
-              {deleteM.isPending ? "Deleting..." : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DeleteProjectModal
+        open={deleteOpen}
+        project={selectedProject}
+        error={deleteError}
+        isDeleting={
+          deleteMutation.isPending
+        }
+        onClose={handleCloseDelete}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }
